@@ -4,6 +4,8 @@ from logging import getLogger
 
 from config.db import sqlite_conn
 
+import requests
+
 from web3 import Web3
 
 from telegram import Update
@@ -45,7 +47,22 @@ logger = getLogger(__name__)
 twitter_login = {}
 
 def validate_twitter_user(twitter_login):
-    pass
+    url = 'https://api.twitter.com/1.1/account/verify_credentials.json'
+
+    # Create the authentication header with username and password
+    auth = (twitter_login['username'], twitter_login['pass'])
+
+    try:
+        # Send a GET request to the Twitter API endpoint
+        response = requests.get(url, auth=auth)
+
+        # Check the response status code
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except requests.exceptions.RequestException as e:
+        print("An error occurred:", e)
 
 def verify_bsc_wallet_address(address):
     # Connect to the BSC network using a Web3 provider

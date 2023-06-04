@@ -26,11 +26,11 @@ IS_VIDEO: str = "video"
 WELCOME_MESSAGE: str = (
     "Hello {first_name}, welcome to MILC Community Bot.\n"
     "\n"
-    "<b>Before we start, what can the bot actually do?</b>\n"
+    "**Before we start, what can the bot actually do?**\n"
     "\n"
     "MILC Community Bot allows you to earn rewards by promoting and spreading the word about the MILC project on Twitter. To make this work, the Bot has a Competition function and integrated Reward Distributions.\n"
     "\n"
-    "What's the point of it?\n"
+    "**What's the point of it?**\n"
     "\n"
     "With your help and the incentives that come with it, we want to increase the visibility and reach of the MILC project.\n"
     "\n"
@@ -85,7 +85,8 @@ PRIVACY_MESSAGE: str = (
     "And when you want to Compete in the Competition, is requires your BSC wallet address and your Twitter login details to verify you."
     )
 WELCOME_TO_THE_TWITTER_SECTION: str = (
-    "Welcome to the Twitter section, Choose the topic to Search, Date and Send Tweets to users 👇")
+    "Welcome to the Twitter section.\n"
+    "Choose the topic to Search, Date and Send Tweets to users 👇")
 WELL_YOU_WANT_TO_DO_THE_LOTTERY_ON_WHAT_BASIS: str = (
     "Well you want to do the lottery on what basis:")
 REMEMBER_ME: str = "Is your session saved for the next login?"

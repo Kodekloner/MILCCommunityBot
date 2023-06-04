@@ -117,7 +117,6 @@ schema = {
     },
 }
 
-print(os.environ)
 config = {
     "TELEGRAM": {
         "ADMINS": os.environ.get("ADMINS", "").split(" "),
