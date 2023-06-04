@@ -158,7 +158,7 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         result = cursor.fetchone()
         if result:
             if "pass" in twitter_login:
-                if validate_twitter_user(twitter_login):
+                if validate_twitter_user(twitter_login) == True:
                     cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (username, user_id))
                     await update.message.reply_text(
                         "Congratulation!, your Twitter details are correct. Add your Address if you haven't",
@@ -179,7 +179,7 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 return ADD_USER_WALLET_STATE
         else:
             if "pass" in twitter_login:
-                if validate_twitter_user(twitter_login):
+                if validate_twitter_user(twitter_login) == True:
                     cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username) VALUES (?,?)", (user_id, username))
                     await update.message.reply_text(
                         "Congratulation!, your Twitter details are correct. Add your Address if you haven't",
@@ -224,7 +224,7 @@ async def store_pass(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         result = cursor.fetchone()
         if result:
             if "username" in twitter_login:
-                if validate_twitter_user(twitter_login):
+                if validate_twitter_user(twitter_login) == True:
                     cursor.execute("UPDATE user_wallet_twitter SET twitter_pass = ? WHERE userid = ?", (password, user_id))
                     await update.message.reply_text(
                         "Congratulation!, your Twitter details are correct. Add your Address if you haven't",
@@ -245,7 +245,7 @@ async def store_pass(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
                 return ADD_USER_WALLET_STATE
         else:
             if "username" in twitter_login:
-                if validate_twitter_user(twitter_login):
+                if validate_twitter_user(twitter_login) == True:
                     cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_pass) VALUES (?,?)", (user_id, password))
                     await update.message.reply_text(
                         "Congratulation!, your Twitter details are correct. Add your Address if you haven't",
