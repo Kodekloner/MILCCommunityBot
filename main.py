@@ -117,8 +117,8 @@ def main():
             webhook_url=config["TELEGRAM"]["WEBHOOK_URL"],
         )
     else:
-    logger.info("Using polling...")
-    application.run_polling(drop_pending_updates=True)
+    	logger.info("Using polling...")
+    	application.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":
