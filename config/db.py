@@ -62,7 +62,6 @@ cursor.execute(
         `id` INTEGER PRIMARY KEY AUTOINCREMENT,
         `userid` TEXT,
         `twitter_username` TEXT,
-        `twitter_pass` TEXT,
         `address` TEXT
     );
     """

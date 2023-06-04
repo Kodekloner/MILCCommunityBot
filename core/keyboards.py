@@ -23,13 +23,11 @@ from constants.keys import ADMIN_CREAT_WALLET_KEY
 from constants.keys import VIEW_WALLET_KEY
 from constants.keys import ADD_ADDRESS_KEY
 from constants.keys import ADD_TWITTER_USER_KEY
-from constants.keys import ADD_TWITTER_PASS_KEY
 from constants.keys import SHOW_ADDRESS_KEY
 from constants.keys import SHOW_TWITTER_USER_KEY
-from constants.keys import SHOW_TWITTER_PASS_KEY
 from constants.keys import CHANGE_ADDRESS_KEY
 from constants.keys import CHANGE_TWITTER_USER_KEY
-from constants.keys import CHANGE_TWITTER_PASS_KEY
+
 
 
 base_reply_keyboard: list = [
@@ -85,28 +83,22 @@ admin_wallet_keyboard = ReplyKeyboardMarkup(admin_wallet_reply_keyboard,
 
 add_user_wallet_reply_keyboard = [
     [ADD_ADDRESS_KEY, ADD_TWITTER_USER_KEY],
-    [ADD_TWITTER_PASS_KEY, BACK_TO_HOME_KEY],
+    [BACK_TO_HOME_KEY],
 ]
 add_user_wallet_keyboard = ReplyKeyboardMarkup(add_user_wallet_reply_keyboard,
                                             resize_keyboard=True)
 
-add_address_reply_keyboard = [
+view_user_add_addr_reply_keyboard = [
+    [ADD_ADDRESS_KEY, SHOW_TWITTER_USER_KEY],
     [BACK_KEY],
 ]
-add_address_keyboard = ReplyKeyboardMarkup(add_address_reply_keyboard,
+view_user_add_addr_keyboard = ReplyKeyboardMarkup(view_user_add_addr_reply_keyboard,
                                             resize_keyboard=True)
-
 
 change_add_reply_keyboard = [
     [CHANGE_ADDRESS_KEY, BACK_KEY]
 ]
 change_add_keyboard = ReplyKeyboardMarkup(change_add_reply_keyboard,
-                                            resize_keyboard=True)
-
-change_pass_reply_keyboard = [
-    [CHANGE_TWITTER_PASS_KEY, BACK_KEY]
-]
-change_pass_keyboard = ReplyKeyboardMarkup(change_pass_reply_keyboard,
                                             resize_keyboard=True)
 
 change_username_reply_keyboard = [
@@ -117,7 +109,14 @@ change_username_keyboard = ReplyKeyboardMarkup(change_username_reply_keyboard,
 
 view_user_wallet_reply_keyboard = [
     [SHOW_ADDRESS_KEY, SHOW_TWITTER_USER_KEY],
-    [SHOW_TWITTER_PASS_KEY, BACK_KEY],
+    [BACK_KEY],
 ]
 view_user_wallet_keyboard = ReplyKeyboardMarkup(view_user_wallet_reply_keyboard,
+                                            resize_keyboard=True)
+
+add_user_view_addr_reply_keyboard = [
+    [SHOW_ADDRESS_KEY, ADD_TWITTER_USER_KEY],
+    [BACK_KEY],
+]
+add_user_view_addr_keyboard = ReplyKeyboardMarkup(add_user_view_addr_reply_keyboard,
                                             resize_keyboard=True)

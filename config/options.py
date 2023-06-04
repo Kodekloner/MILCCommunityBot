@@ -7,7 +7,7 @@ from utils import cleaner
 from config.logger import logger
 
 # Load environment variables from .env file
-# load_dotenv()
+load_dotenv()
 
 schema = {
     "TELEGRAM": {
@@ -119,19 +119,19 @@ schema = {
 
 config = {
     "TELEGRAM": {
-        "ADMINS": os.environ.get("ADMINS", "").split(" "),
-        "TOKEN": os.environ.get("TELEGRAM_TOKEN"),
-        "UPDATER": os.environ.get("UPDATER"),
-        "WEBHOOK_URL": f"""{os.environ.get("WEBHOOK_URL")}/{os.environ.get("TELEGRAM_TOKEN")}""",
+        "ADMINS": os.environ.get("ADMINS", os.getenv("ADMINS")).split(" "),
+        "TOKEN": os.environ.get("TELEGRAM_TOKEN", os.getenv("TELEGRAM_TOKEN")),
+        "UPDATER": os.environ.get("UPDATER", os.getenv("UPDATER")),
+        "WEBHOOK_URL": f"""{os.environ.get("WEBHOOK_URL", os.getenv("WEBHOOK_URL"))}/{os.environ.get("TELEGRAM_TOKEN", os.getenv("TELEGRAM_TOKEN"))}""",
         "LOGGING_CHANNEL_ID": int(os.environ.get("LOGGING_CHANNEL_ID"))
         if os.environ.get("LOGGING_CHANNEL_ID")
         else None,
         "QUOTE_CHANNEL_ID": int(os.environ.get("QUOTE_CHANNEL_ID"))
         if os.environ.get("QUOTE_CHANNEL_ID")
         else None,
-        "MONGODB_PWD": os.environ.get("MONGODB_PWD"),
-        "BINANCE_API_KEY": os.environ.get("BINANCE_API_KEY"),
-        "BINANCE_SECRET_KEY": os.environ.get("BINANCE_SECRET_KEY")
+        "MONGODB_PWD": os.environ.get("MONGODB_PWD", os.getenv("MONGODB_PWD")),
+        "BINANCE_API_KEY": os.environ.get("BINANCE_API_KEY", os.getenv("BINANCE_API_KEY")),
+        "BINANCE_SECRET_KEY": os.environ.get("BINANCE_SECRET_KEY", os.getenv("BINANCE_SECRET_KEY"))
     },
     "API": {
         "GIPHY_API_KEY": os.environ.get("GIPHY_API_KEY", ""),

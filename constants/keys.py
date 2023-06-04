@@ -9,13 +9,10 @@ BACK_KEY: str = "Back ◀️"
 USER_WALLET_KEY: str = "Wallet and Twitter 💰"
 SHOW_ADDRESS_KEY: str = "View Address 💲"
 SHOW_TWITTER_USER_KEY: str = "View Twitter username👨‍💼"
-SHOW_TWITTER_PASS_KEY: str = "View Twitter password 🔐"
 ADD_ADDRESS_KEY: str = "BSC Address 💲"
 ADD_TWITTER_USER_KEY: str = "Twitter usersname 👨‍💼"
-ADD_TWITTER_PASS_KEY: str = "Twitter password 🔑"
 CHANGE_ADDRESS_KEY: str = "Change Address 💲"
 CHANGE_TWITTER_USER_KEY: str = "Change Twitter username 👨‍💼"
-CHANGE_TWITTER_PASS_KEY: str = "Change Twitter password 🔐"
 
 
 

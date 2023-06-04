@@ -23,46 +23,29 @@ from constants.states import USER_WALLET_STATE
 from constants.states import VIEW_USER_WALLET_STATE
 from constants.states import ADD_USER_WALLET_STATE
 from constants.states import STORE_ADDRESS_STATE
-from constants.states import STORE_PASS_STATE
 from constants.states import STORE_USERNAME_STATE
 from constants.states import VIEW_ADDRESS_STATE
-from constants.states import VIEW_PASS_STATE
 from constants.states import VIEW_USERNAME_STATE
 from constants.states import CHANGE_USERNAME_STATE
-from constants.states import CHANGE_PASS_STATE
 from constants.states import CHANGE_ADDRESS_STATE
+from constants.states import ADD_USERNAME_VIEW_ADDR_STATE
+from constants.states import VIEW_USERNAME_ADD_ADDR_STATE
+from constants.states import OPT_CHANGE_USERNAME_STATE
+from constants.states import OPT_CHANGE_ADDRESS_STATE
 from core.keyboards import back_keyboard
 from core.keyboards import base_keyboard
 from core.keyboards import add_user_wallet_keyboard
-from core.keyboards import add_address_keyboard
 from core.keyboards import view_user_wallet_keyboard
 from core.keyboards import change_add_keyboard
-from core.keyboards import change_pass_keyboard
 from core.keyboards import change_username_keyboard
+from core.keyboards import view_user_add_addr_keyboard
+from core.keyboards import add_user_view_addr_keyboard
 from utils.decorators import send_action
 
 # Init logger
 logger = getLogger(__name__)
 
-twitter_login = {}
 
-def validate_twitter_user(twitter_login):
-    url = 'https://api.twitter.com/1.1/account/verify_credentials.json'
-
-    # Create the authentication header with username and password
-    auth = (twitter_login['username'], twitter_login['pass'])
-
-    try:
-        # Send a GET request to the Twitter API endpoint
-        response = requests.get(url, auth=auth)
-
-        # Check the response status code
-        if response.status_code == 200:
-            return True
-        else:
-            return False
-    except requests.exceptions.RequestException as e:
-        print("An error occurred:", e)
 
 def verify_bsc_wallet_address(address):
     # Connect to the BSC network using a Web3 provider
@@ -96,7 +79,7 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 async def add_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
         "Please add one of your BSC wallet address to participate in the competition",
-        reply_markup=add_address_keyboard,
+        reply_markup=back_keyboard,
     )
     return STORE_ADDRESS_STATE
 
@@ -104,6 +87,24 @@ async def add_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
 async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     address = update.message.text
     if address == "Back ◀️":
+        user_id = update.effective_user.id
+        cursor = sqlite_conn.cursor()
+        cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
+        result = cursor.fetchone()
+        if result:
+            # if result['twitter_username'] is not None and result['twitter_username'] != "" :
+            #     # view username and add address
+            await update.message.reply_text(
+                "Please Add your BSC Address",
+                reply_markup=view_user_add_addr_keyboard,
+            )
+            return VIEW_USERNAME_ADD_ADDR_STATE
+        await update.message.reply_text(
+            "Please add your Twitter username and a BSC wallet address to participate in the competition",
+            reply_markup=add_user_wallet_keyboard,
+        )
+        return ADD_USER_WALLET_STATE
+
         await update.message.reply_text(
                 "Please add your Twitter username and a BSC wallet address to participate in the competition",
                 reply_markup=add_user_wallet_keyboard,
@@ -113,31 +114,45 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
     elif verify_bsc_wallet_address(address):
         user_id = update.effective_user.id
         cursor = sqlite_conn.cursor()
-        cursor.execute("INSERT INTO user_wallet_twitter (userid, address) VALUES (?,?)", (user_id, address))
-        sqlite_conn.commit()
-        await update.message.reply_text(
-            "Your Wallet address has be saved successfully ✅, Enter Your Twitter Login Details Next",
-            reply_markup=add_user_wallet_keyboard,
-        )
-        return ADD_USER_WALLET_STATE
+        cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
+        result = cursor.fetchone()
+        if result:
+            if result['twitter_username'] is not None and result['twitter_username'] != "" :
+                cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (address, user_id))
+                sqlite_conn.commit()
+                await update.message.reply_text(
+                    "Congratulation!, You can Now Participate in the Competition ",
+                    reply_markup=base_keyboard,
+                )
+                return HOME_STATE
+            else:
+                cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (address, user_id))
+                sqlite_conn.commit()
+                await update.message.reply_text(
+                    "Please add your Twitter Username",
+                    reply_markup=back_keyboard,
+                )
+                return STORE_USERNAME_STATE
+        else:
+            cursor.execute("INSERT INTO user_wallet_twitter (userid, address) VALUES (?,?)", (user_id, address))
+            sqlite_conn.commit()
+            await update.message.reply_text(
+                "Your Wallet address has be saved successfully ✅, Enter Your Twitter username Next",
+                reply_markup=back_keyboard,
+            )
+            return STORE_USERNAME_STATE
     else:
         await update.message.reply_text(
             "Invalid Address ❌, Please Enter a Valid BSC Address",
-            reply_markup=add_address_keyboard,
+            reply_markup=back_keyboard,
         )
         return STORE_ADDRESS_STATE
-
-    await update.message.reply_text(
-        "Please add one of your BSC wallet address to participate in the competition",
-        reply_markup=twitter_username_keyboard,
-    )
-    return STORE_ADDRESS_STATE
 
 @send_action(ChatAction.TYPING)
 async def add_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
         "Please add your Twitter Username",
-        reply_markup=add_address_keyboard,
+        reply_markup=back_keyboard,
     )
     return STORE_USERNAME_STATE
 
@@ -145,125 +160,50 @@ async def add_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
 async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     username = update.message.text
     if username == "Back ◀️":
+        user_id = update.effective_user.id
+        cursor = sqlite_conn.cursor()
+        cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
+        result = cursor.fetchone()
+        if result:
+            # if result['twitter_username'] is not None and result['twitter_username'] != "" :
+            #     # view username and add address
+            await update.message.reply_text(
+                "Please Add your BSC Address",
+                reply_markup=add_user_view_addr_keyboard,
+            )
+            return ADD_USERNAME_VIEW_ADDR_STATE
         await update.message.reply_text(
                 "Please add your Twitter username and a BSC wallet address to participate in the competition",
                 reply_markup=add_user_wallet_keyboard,
             )
         return ADD_USER_WALLET_STATE
     else:
-        twitter_login['username'] = username
         user_id = update.effective_user.id
         cursor = sqlite_conn.cursor()
         cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
         result = cursor.fetchone()
         if result:
-            if "pass" in twitter_login:
-                if validate_twitter_user(twitter_login) == True:
-                    cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (username, user_id))
-                    await update.message.reply_text(
-                        "Congratulation!, your Twitter details are correct. Add your Address if you haven't",
-                        reply_markup=add_user_wallet_keyboard,
-                    )
-                    return ADD_USER_WALLET_STATE
-                else:
-                    await update.message.reply_text(
-                        "Either your username or password is wrong",
-                        reply_markup=add_user_wallet_keyboard,
-                    )
-                    return ADD_USER_WALLET_STATE
-            else:
+            if result['address'] is not None and result['address'] != None :
+                cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (username, user_id))
                 await update.message.reply_text(
-                    "Enter Your Twitter Password",
-                    reply_markup=add_user_wallet_keyboard,
+                    "Congratulation!, You can Now Participate in the Competition ",
+                    reply_markup=base_keyboard,
                 )
-                return ADD_USER_WALLET_STATE
+                return HOME_STATE
+            else:
+                cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (username, user_id))
+                await update.message.reply_text(
+                    "Please add one of your BSC wallet address to participate in the competition",
+                    reply_markup=back_keyboard,
+                )
+                return STORE_ADDRESS_STATE
         else:
-            if "pass" in twitter_login:
-                if validate_twitter_user(twitter_login) == True:
-                    cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username) VALUES (?,?)", (user_id, username))
-                    await update.message.reply_text(
-                        "Congratulation!, your Twitter details are correct. Add your Address if you haven't",
-                        reply_markup=add_user_wallet_keyboard,
-                    )
-                    return ADD_USER_WALLET_STATE
-                else:
-                    await update.message.reply_text(
-                        "Either your username or password is wrong",
-                        reply_markup=add_user_wallet_keyboard,
-                    )
-                    return ADD_USER_WALLET_STATE
-            else:
-                await update.message.reply_text(
-                    "Enter Your Twitter Password",
-                    reply_markup=add_user_wallet_keyboard,
-                )
-                return ADD_USER_WALLET_STATE
-
-@send_action(ChatAction.TYPING)
-async def add_pass(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    await update.message.reply_text(
-        "Please add your Twitter Password",
-        reply_markup=add_address_keyboard,
-    )
-    return STORE_PASS_STATE
-
-@send_action(ChatAction.TYPING)
-async def store_pass(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    password = update.message.text
-    if password == "Back ◀️":
-        await update.message.reply_text(
-                "Please add your Twitter username and a BSC wallet address to participate in the competition",
-                reply_markup=add_user_wallet_keyboard,
+            cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username) VALUES (?,?)", (user_id, username))
+            await update.message.reply_text(
+                "Congratulation!, your Twitter username add Successfully. Add your Address if you haven't",
+                reply_markup=back_keyboard,
             )
-        return ADD_USER_WALLET_STATE
-    else:
-        twitter_login['pass'] = password
-        user_id = update.effective_user.id
-        cursor = sqlite_conn.cursor()
-        cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
-        result = cursor.fetchone()
-        if result:
-            if "username" in twitter_login:
-                if validate_twitter_user(twitter_login) == True:
-                    cursor.execute("UPDATE user_wallet_twitter SET twitter_pass = ? WHERE userid = ?", (password, user_id))
-                    await update.message.reply_text(
-                        "Congratulation!, your Twitter details are correct. Add your Address if you haven't",
-                        reply_markup=add_user_wallet_keyboard,
-                    )
-                    return ADD_USER_WALLET_STATE
-                else:
-                    await update.message.reply_text(
-                        "Either your username or password is wrong",
-                        reply_markup=add_user_wallet_keyboard,
-                    )
-                    return ADD_USER_WALLET_STATE
-            else:
-                await update.message.reply_text(
-                    "Enter Your Twitter Username",
-                    reply_markup=add_user_wallet_keyboard,
-                )
-                return ADD_USER_WALLET_STATE
-        else:
-            if "username" in twitter_login:
-                if validate_twitter_user(twitter_login) == True:
-                    cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_pass) VALUES (?,?)", (user_id, password))
-                    await update.message.reply_text(
-                        "Congratulation!, your Twitter details are correct. Add your Address if you haven't",
-                        reply_markup=add_user_wallet_keyboard,
-                    )
-                    return ADD_USER_WALLET_STATE
-                else:
-                    await update.message.reply_text(
-                        "Either your username or password is wrong",
-                        reply_markup=add_user_wallet_keyboard,
-                    )
-                    return ADD_USER_WALLET_STATE
-            else:
-                await update.message.reply_text(
-                    "Enter Your Twitter Username",
-                    reply_markup=add_user_wallet_keyboard,
-                )
-                return ADD_USER_WALLET_STATE
+            return STORE_ADDRESS_STATE
 
 @send_action(ChatAction.TYPING)
 async def view_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -274,20 +214,66 @@ async def view_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
     if result['address'] == "":
         await update.message.reply_text(
             "Please add one of your BSC wallet address to participate in the competition",
-            reply_markup=add_address_keyboard,
+            reply_markup=back_keyboard,
         )
         return STORE_ADDRESS_STATE
     else:
         await update.message.reply_text(
-            f"your username is {result['address']}",
+            f"Your username is {result['address']}",
             reply_markup=change_add_keyboard,
         )
-        return CHANGE_add_STATE
-
+        return OPT_CHANGE_ADDRESS_STATE
 
 @send_action(ChatAction.TYPING)
-async def dis_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    pass
+async def opt_change_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    message = update.message.text
+    if message == "Back ◀️":
+        await update.message.reply_text(
+            "Please Add your BSC Address",
+            reply_markup=view_user_add_addr_keyboard,
+        )
+        return VIEW_USERNAME_ADD_ADDR_STATE
+    elif message == "Change Address 💲":
+        await update.message.reply_text(
+            "Type Your new BSC Address",
+            reply_markup=back_keyboard,
+        )
+        return CHANGE_ADDRESS_STATE
+    else:
+        await update.message.reply_text(
+            f"Invalid Command",
+            reply_markup=change_add_keyboard,
+        )
+        return OPT_CHANGE_ADDRESS_STATE
+
+async def store_change_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    message = update.message.text
+    if message == "Back ◀️":
+        user_id = update.effective_user.id
+        cursor = sqlite_conn.cursor()
+        cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
+        result = cursor.fetchone()
+        await update.message.reply_text(
+            f"Your username is {result['address']}",
+            reply_markup=change_add_keyboard,
+        )
+        return OPT_CHANGE_ADDRESS_STATE
+    elif verify_bsc_wallet_address(address):
+        user_id = update.effective_user.id
+        cursor = sqlite_conn.cursor()
+        cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (message, user_id))
+        sqlite_conn.commit()
+        await update.message.reply_text(
+            "Congratulation!, You have Successfully changed your BSC Wallet Address. Add your Twitter Username if you haven't",
+            reply_markup=add_user_view_addr_keyboard,
+        )
+        return ADD_USERNAME_VIEW_ADDR_STATE
+    else:
+        await update.message.reply_text(
+            "Invalid Address ❌, Please Enter a Valid BSC Address",
+            reply_markup=back_keyboard,
+        )
+        return CHANGE_ADDRESS_STATE
 
 @send_action(ChatAction.TYPING)
 async def view_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -298,7 +284,7 @@ async def view_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
     if result['twitter_username'] == "":
         await update.message.reply_text(
             "Please add your Twitter Username",
-            reply_markup=add_address_keyboard,
+            reply_markup=back_keyboard,
         )
         return STORE_USERNAME_STATE
     else:
@@ -306,34 +292,53 @@ async def view_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
             f"your username is {result['twitter_username']}",
             reply_markup=change_username_keyboard,
         )
-        return CHANGE_USERNAME_STATE
+        return OPT_CHANGE_USERNAME_STATE
 
 @send_action(ChatAction.TYPING)
-async def dis_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    pass
-
-@send_action(ChatAction.TYPING)
-async def view_pass(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    user_id = update.effective_user.id
-    cursor = sqlite_conn.cursor()
-    cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
-    result = cursor.fetchone()
-    if result['twitter_pass'] == "":
+async def opt_change_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    message = update.message.text
+    if message == "Back ◀️":
         await update.message.reply_text(
-            "Please add your Twitter Password",
-            reply_markup=add_address_keyboard,
+            "Please Add your twitter Username",
+            reply_markup=add_user_view_addr_keyboard,
         )
-        return STORE_PASS_STATE
+        return ADD_USERNAME_VIEW_ADDR_STATE
+    elif message == "Change Twitter username 👨‍💼‍":
+        await update.message.reply_text(
+            "Type Your new Username",
+            reply_markup=back_keyboard,
+        )
+        return CHANGE_USERNAME_STATE
     else:
         await update.message.reply_text(
-            f"your username is {result['twitter_pass']}",
-            reply_markup=change_pass_keyboard,
+            f"Invalid Command",
+            reply_markup=change_username_keyboard,
         )
-        return CHANGE_PASS_STATE
+        return OPT_CHANGE_USERNAME_STATE
 
 @send_action(ChatAction.TYPING)
-async def dis_pass(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    pass
+async def store_change_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    message = update.message.text
+    if message == "Back ◀️":
+        user_id = update.effective_user.id
+        cursor = sqlite_conn.cursor()
+        cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
+        result = cursor.fetchone()
+        await update.message.reply_text(
+            f"Your username is {result['twitter_username']}",
+            reply_markup=change_username_keyboard,
+        )
+        return OPT_CHANGE_USERNAME_STATE
+    else:
+        user_id = update.effective_user.id
+        cursor = sqlite_conn.cursor()
+        cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (message, user_id))
+        sqlite_conn.commit()
+        await update.message.reply_text(
+            "Congratulation!, You have Successfully changed your twitter username. Add your Address if you haven't",
+            reply_markup=view_user_add_addr_keyboard,
+        )
+        return VIEW_USERNAME_ADD_ADDR_STATE
 
 # @send_action(ChatAction.TYPING)
 # async def twitter_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:

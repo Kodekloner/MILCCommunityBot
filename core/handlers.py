@@ -28,10 +28,8 @@ from constants.keys import ADMIN_CREAT_WALLET_KEY
 from constants.keys import VIEW_WALLET_KEY
 from constants.keys import ADD_ADDRESS_KEY
 from constants.keys import ADD_TWITTER_USER_KEY
-from constants.keys import ADD_TWITTER_PASS_KEY
 from constants.keys import SHOW_ADDRESS_KEY
 from constants.keys import SHOW_TWITTER_USER_KEY
-from constants.keys import SHOW_TWITTER_PASS_KEY
 from constants.states import ADMIN_STATE
 from constants.states import HOME_STATE
 from constants.states import TWITTER_STATE
@@ -46,7 +44,12 @@ from constants.states import VIEW_USER_WALLET_STATE
 from constants.states import CHANGE_USER_WALLET_STATE
 from constants.states import STORE_ADDRESS_STATE
 from constants.states import STORE_USERNAME_STATE
-from constants.states import STORE_PASS_STATE
+from constants.states import ADD_USERNAME_VIEW_ADDR_STATE
+from constants.states import VIEW_USERNAME_ADD_ADDR_STATE
+from constants.states import CHANGE_USERNAME_STATE
+from constants.states import CHANGE_ADDRESS_STATE
+from constants.states import OPT_CHANGE_USERNAME_STATE
+from constants.states import OPT_CHANGE_ADDRESS_STATE
 
 # Init logger
 
@@ -74,8 +77,6 @@ def base_conversation_handler():
                                wallet.add_address),
                 MessageHandler(filters.Regex(f"^{ADD_TWITTER_USER_KEY}$"),
                                wallet.add_username),
-                MessageHandler(filters.Regex(f"^{ADD_TWITTER_PASS_KEY}$"),
-                               wallet.add_pass),
                 MessageHandler(filters.Regex(f"^{BACK_TO_HOME_KEY}$"),
                                wallet.back_to_home),
             ],
@@ -84,14 +85,31 @@ def base_conversation_handler():
                                wallet.view_address),
                 MessageHandler(filters.Regex(f"^{SHOW_TWITTER_USER_KEY}$"),
                                wallet.view_username),
-                MessageHandler(filters.Regex(f"^{SHOW_TWITTER_PASS_KEY}$"),
-                               wallet.view_pass),
+                MessageHandler(filters.Regex(f"^{BACK_TO_HOME_KEY}$"),
+                               wallet.back_to_home),
+            ],
+            ADD_USERNAME_VIEW_ADDR_STATE: [
+                MessageHandler(filters.Regex(f"^{SHOW_ADDRESS_KEY}$"),
+                               wallet.view_address),
+                MessageHandler(filters.Regex(f"^{ADD_TWITTER_USER_KEY}$"),
+                               wallet.add_username),
+                MessageHandler(filters.Regex(f"^{BACK_TO_HOME_KEY}$"),
+                               wallet.back_to_home),
+            ],
+            VIEW_USERNAME_ADD_ADDR_STATE: [
+                MessageHandler(filters.Regex(f"^{ADD_ADDRESS_KEY}$"),
+                               wallet.add_address),
+                MessageHandler(filters.Regex(f"^{SHOW_TWITTER_USER_KEY}$"),
+                               wallet.view_username),
                 MessageHandler(filters.Regex(f"^{BACK_TO_HOME_KEY}$"),
                                wallet.back_to_home),
             ],
             STORE_ADDRESS_STATE: [MessageHandler(filters.TEXT, wallet.store_address)],
             STORE_USERNAME_STATE: [MessageHandler(filters.TEXT, wallet.store_username)],
-            STORE_PASS_STATE: [MessageHandler(filters.TEXT, wallet.store_pass)],
+            OPT_CHANGE_ADDRESS_STATE: [MessageHandler(filters.TEXT, wallet.opt_change_address)],
+            OPT_CHANGE_USERNAME_STATE: [MessageHandler(filters.TEXT, wallet.opt_change_username)],
+            CHANGE_ADDRESS_STATE: [MessageHandler(filters.TEXT, wallet.store_change_address)],
+            CHANGE_USERNAME_STATE: [MessageHandler(filters.TEXT, wallet.store_change_username)],
             ADMIN_STATE: [
                 MessageHandler(filters.Regex(f"^{COMPETITION_KEY}$"),
                                admin.competition),
