@@ -7,7 +7,7 @@ from utils import cleaner
 from config.logger import logger
 
 # Load environment variables from .env file
-load_dotenv()
+# load_dotenv()
 
 schema = {
     "TELEGRAM": {
@@ -117,39 +117,40 @@ schema = {
     },
 }
 
+print(os.environ)
 config = {
     "TELEGRAM": {
-        "ADMINS": os.getenv("ADMINS", "").split(" "),
-        "TOKEN": os.getenv("TELEGRAM_TOKEN"),
-        "UPDATER": os.getenv("UPDATER"),
-        "WEBHOOK_URL": f"""{os.getenv("WEBHOOK_URL")}/{os.getenv("TELEGRAM_TOKEN")}""",
-        "LOGGING_CHANNEL_ID": int(os.getenv("LOGGING_CHANNEL_ID"))
-        if os.getenv("LOGGING_CHANNEL_ID")
+        "ADMINS": os.environ.get("ADMINS", "").split(" "),
+        "TOKEN": os.environ.get("TELEGRAM_TOKEN"),
+        "UPDATER": os.environ.get("UPDATER"),
+        "WEBHOOK_URL": f"""{os.environ.get("WEBHOOK_URL")}/{os.environ.get("TELEGRAM_TOKEN")}""",
+        "LOGGING_CHANNEL_ID": int(os.environ.get("LOGGING_CHANNEL_ID"))
+        if os.environ.get("LOGGING_CHANNEL_ID")
         else None,
-        "QUOTE_CHANNEL_ID": int(os.getenv("QUOTE_CHANNEL_ID"))
-        if os.getenv("QUOTE_CHANNEL_ID")
+        "QUOTE_CHANNEL_ID": int(os.environ.get("QUOTE_CHANNEL_ID"))
+        if os.environ.get("QUOTE_CHANNEL_ID")
         else None,
-        "MONGODB_PWD": os.getenv("MONGODB_PWD"),
-        "BINANCE_API_KEY": os.getenv("BINANCE_API_KEY"),
-        "BINANCE_SECRET_KEY": os.getenv("BINANCE_SECRET_KEY")
+        "MONGODB_PWD": os.environ.get("MONGODB_PWD"),
+        "BINANCE_API_KEY": os.environ.get("BINANCE_API_KEY"),
+        "BINANCE_SECRET_KEY": os.environ.get("BINANCE_SECRET_KEY")
     },
     "API": {
-        "GIPHY_API_KEY": os.getenv("GIPHY_API_KEY", ""),
-        "GOODREADS_API_KEY": os.getenv("GOODREADS_API_KEY", ""),
-        "IMGUR_API_KEY": os.getenv("IMGUR_API_KEY", ""),
-        "INSTAGRAM_SESSION_NAME": os.getenv("INSTAGRAM_SESSION_NAME", ""),
+        "GIPHY_API_KEY": os.environ.get("GIPHY_API_KEY", ""),
+        "GOODREADS_API_KEY": os.environ.get("GOODREADS_API_KEY", ""),
+        "IMGUR_API_KEY": os.environ.get("IMGUR_API_KEY", ""),
+        "INSTAGRAM_SESSION_NAME": os.environ.get("INSTAGRAM_SESSION_NAME", ""),
         "REDDIT": {
-            "CLIENT_ID": os.getenv("REDDIT_CLIENT_ID", ""),
-            "CLIENT_SECRET": os.getenv("REDDIT_CLIENT_SECRET", ""),
-            "USER_AGENT": os.getenv("REDDIT_USER_AGENT", ""),
+            "CLIENT_ID": os.environ.get("REDDIT_CLIENT_ID", ""),
+            "CLIENT_SECRET": os.environ.get("REDDIT_CLIENT_SECRET", ""),
+            "USER_AGENT": os.environ.get("REDDIT_USER_AGENT", ""),
         },
-        "RAPID_API_KEY": os.getenv("RAPID_API_KEY", ""),
-        "SMMRY_API_KEY": os.getenv("SMMRY_API_KEY", ""),
-        "STEAM_API_KEY": os.getenv("STEAM_API_KEY", ""),
-        "TWITTER_BEARER_TOKEN": os.getenv("TWITTER_BEARER_TOKEN", ""),
-        "OPEN_AI_API_KEY": os.getenv("OPEN_AI_API_KEY", ""),
-        "WOLFRAM_APP_ID": os.getenv("WOLFRAM_APP_ID", ""),
-        "YOUTUBE_API_KEY": os.getenv("YOUTUBE_API_KEY", ""),
+        "RAPID_API_KEY": os.environ.get("RAPID_API_KEY", ""),
+        "SMMRY_API_KEY": os.environ.get("SMMRY_API_KEY", ""),
+        "STEAM_API_KEY": os.environ.get("STEAM_API_KEY", ""),
+        "TWITTER_BEARER_TOKEN": os.environ.get("TWITTER_BEARER_TOKEN", ""),
+        "OPEN_AI_API_KEY": os.environ.get("OPEN_AI_API_KEY", ""),
+        "WOLFRAM_APP_ID": os.environ.get("WOLFRAM_APP_ID", ""),
+        "YOUTUBE_API_KEY": os.environ.get("YOUTUBE_API_KEY", ""),
     },
 }
 
