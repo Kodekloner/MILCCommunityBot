@@ -64,11 +64,25 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
     result = cursor.fetchone()
     if result:
-        await update.message.reply_text(
-            "View your Twitter username, password and a BSC wallet address",
-            reply_markup=view_user_wallet_keyboard,
-        )
-        return VIEW_USER_WALLET_STATE
+        if result['twitter_username'] is not None and result['twitter_username'] != "" and result['address'] is not None and result['address'] != "" :
+            await update.message.reply_text(
+                "View your Twitter username and BSC wallet address",
+                reply_markup=view_user_wallet_keyboard,
+            )
+            return VIEW_USER_WALLET_STATE
+        elif result['twitter_username'] is None or result['twitter_username'] == "" :
+            await update.message.reply_text(
+                "Please Add your BSC Address",
+                reply_markup=add_user_view_addr_keyboard,
+            )
+            return ADD_USERNAME_VIEW_ADDR_STATE
+        else:
+            await update.message.reply_text(
+                "Please Add your BSC Address",
+                reply_markup=view_user_add_addr_keyboard,
+            )
+            return VIEW_USERNAME_ADD_ADDR_STATE
+
     await update.message.reply_text(
         "Please add your Twitter username and a BSC wallet address to participate in the competition",
         reply_markup=add_user_wallet_keyboard,
@@ -92,24 +106,9 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
         cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
         result = cursor.fetchone()
         if result:
-            # if result['twitter_username'] is not None and result['twitter_username'] != "" :
-            #     # view username and add address
-            await update.message.reply_text(
-                "Please Add your BSC Address",
-                reply_markup=view_user_add_addr_keyboard,
-            )
-            return VIEW_USERNAME_ADD_ADDR_STATE
-        await update.message.reply_text(
-            "Please add your Twitter username and a BSC wallet address to participate in the competition",
-            reply_markup=add_user_wallet_keyboard,
-        )
-        return ADD_USER_WALLET_STATE
-
-        await update.message.reply_text(
-                "Please add your Twitter username and a BSC wallet address to participate in the competition",
-                reply_markup=add_user_wallet_keyboard,
-            )
-        return ADD_USER_WALLET_STATE
+            await wallet(update, context)
+        else:
+            await wallet(update, context)
 
     elif verify_bsc_wallet_address(address):
         user_id = update.effective_user.id
@@ -117,22 +116,22 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
         cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
         result = cursor.fetchone()
         if result:
-            if result['twitter_username'] is not None and result['twitter_username'] != "" :
-                cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (address, user_id))
-                sqlite_conn.commit()
-                await update.message.reply_text(
-                    "Congratulation!, You can Now Participate in the Competition ",
-                    reply_markup=base_keyboard,
-                )
-                return HOME_STATE
-            else:
-                cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (address, user_id))
-                sqlite_conn.commit()
-                await update.message.reply_text(
-                    "Please add your Twitter Username",
-                    reply_markup=back_keyboard,
-                )
-                return STORE_USERNAME_STATE
+            # if result['twitter_username'] is not None and result['twitter_username'] != "" :
+            cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (address, user_id))
+            sqlite_conn.commit()
+            await update.message.reply_text(
+                "Congratulation!, You can Now Participate in the Competition ",
+                reply_markup=base_keyboard,
+            )
+            return HOME_STATE
+            # else:
+            #     cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (address, user_id))
+            #     sqlite_conn.commit()
+            #     await update.message.reply_text(
+            #         "Please add your Twitter Username",
+            #         reply_markup=back_keyboard,
+            #     )
+            #     return STORE_USERNAME_STATE
         else:
             cursor.execute("INSERT INTO user_wallet_twitter (userid, address) VALUES (?,?)", (user_id, address))
             sqlite_conn.commit()
@@ -160,23 +159,23 @@ async def add_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
 async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     username = update.message.text
     if username == "Back ◀️":
-        user_id = update.effective_user.id
-        cursor = sqlite_conn.cursor()
-        cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
-        result = cursor.fetchone()
-        if result:
-            # if result['twitter_username'] is not None and result['twitter_username'] != "" :
-            #     # view username and add address
-            await update.message.reply_text(
-                "Please Add your BSC Address",
-                reply_markup=add_user_view_addr_keyboard,
-            )
-            return ADD_USERNAME_VIEW_ADDR_STATE
-        await update.message.reply_text(
-                "Please add your Twitter username and a BSC wallet address to participate in the competition",
-                reply_markup=add_user_wallet_keyboard,
-            )
-        return ADD_USER_WALLET_STATE
+        # user_id = update.effective_user.id
+        # cursor = sqlite_conn.cursor()
+        # cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
+        # result = cursor.fetchone()
+        # if result:
+        #     # if result['twitter_username'] is not None and result['twitter_username'] != "" :
+        #     #     # view username and add address
+        #     await update.message.reply_text(
+        #         "Please Add your BSC Address",
+        #         reply_markup=add_user_view_addr_keyboard,
+        #     )
+        #     return ADD_USERNAME_VIEW_ADDR_STATE
+        # await update.message.reply_text(
+        #         "Please add your Twitter username and a BSC wallet address to participate in the competition",
+        #         reply_markup=add_user_wallet_keyboard,
+        #     )
+        # return ADD_USER_WALLET_STATE
     else:
         user_id = update.effective_user.id
         cursor = sqlite_conn.cursor()
