@@ -1,4 +1,5 @@
 # encoding: utf-8
+import datetime
 import time
 from logging import getLogger
 
@@ -80,7 +81,7 @@ async def back_to_admin(update: Update,
 @send_action(ChatAction.TYPING)
 async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Which Subject would you like to search on twitter. Example 'MILC crypto' without the ''.",
+        "Which Subject would you like to search on twitter. Example 'MLT #MILC @MILCplatform' without the ''.",
         reply_markup=back_keyboard,
     )
     return SEARCH_STATE
@@ -109,7 +110,7 @@ async def store_search(update: Update, context: ContextTypes.DEFAULT_TYPE)-> str
             reply_markup=twitter_keyboard,
         )
     else:
-        cursor.execute("INSERT INTO TwitterSearch (word,) VALUES (?,)", (message,))
+        cursor.execute("INSERT INTO TwitterSearch (word) VALUES (?)", (message,))
         await update.message.reply_text(
             "Search Subject Added Successfully, Setup The Date it will start searching from",
             reply_markup=twitter_keyboard,
@@ -154,8 +155,6 @@ async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         )
         return COMPETITION_STATE
 
-    import datetime
-
     context.job_queue.run_repeating(leaderboard, interval=1800, first=10, chat_id=chat_id, name=str(chat_id), data=formatted_time)
 
     await update.message.reply_text(
@@ -171,7 +170,7 @@ async def stop_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     job_queue = context.job_queue
 
     if any(job.callback == leaderboard for job in job_queue.jobs()):
-        for job in job_queue.Jobs():
+        for job in job_queue.jobs():
             if job.callback == leaderboard:
                 job.schedule_removal()
 
@@ -309,7 +308,7 @@ async def store_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
             reply_markup=twitter_keyboard,
         )
     else:
-        cursor.execute("INSERT INTO TwitterSearch (time,) VALUES (?,)", (message,))
+        cursor.execute("INSERT INTO TwitterSearch (time) VALUES (?)", (message,))
         await update.message.reply_text(
             "Search Date Added Successfully, Now you can now start send tweets",
             reply_markup=twitter_keyboard,
@@ -336,7 +335,7 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return TWITTER_STATE
 
     context.job_queue.run_daily(get_tweets, time=datetime.time(23, 30), chat_id=chat_id, name=str(chat_id))
-    context.job_queue.run_repeating(send_tweets, interval=3600, first=30, chat_id=chat_id, name=str(chat_id))
+    context.job_queue.run_repeating(send_tweets, interval=30, first=10, chat_id=chat_id, name=str(chat_id))
 
     await update.message.reply_text(
         "Successful, User will start receciving tweets",
@@ -353,7 +352,7 @@ async def stop_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
     job_queue = context.job_queue
 
     if any(job.callback == get_tweets or job.callback == send_tweets for job in job_queue.jobs()):
-        for job in job_queue.Jobs():
+        for job in job_queue.jobs():
             if job.callback == get_tweets or job.callback == send_tweets:
                 job.schedule_removal()
 

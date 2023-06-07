@@ -25,8 +25,8 @@ cursor.execute(
     """
     CREATE TABLE IF NOT EXISTS `TwitterSearch`(
         `id` INTEGER PRIMARY KEY,
-        `word` TEXT NOT NULL,
-        `time` TIMESTAMP NOT NULL
+        `word` TEXT,
+        `since_id` INTEGER
     );
     """
 )
@@ -37,6 +37,7 @@ cursor.execute(
     CREATE TABLE IF NOT EXISTS `tweets` (
         `id` INTEGER PRIMARY KEY AUTOINCREMENT,
         `tweets` TEXT NOT NULL,
+        `tw_id` INTEGER,
         `images` TEXT,
         `sent` BOOLEAN
     );

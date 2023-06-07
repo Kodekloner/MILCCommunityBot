@@ -79,10 +79,10 @@ WELCOME_TO_HOME: str = "Welcome To Home, What are you doing?"
 SEND_YOUR_MESSAGE: str = "Send Your Message 👇"
 YOUR_MESSAGE_WAS_SENT: str = "Your Message Was Sent"
 PRIVACY_MESSAGE: str = (
-    "⚠️ This robot stores the following telegram information:\n"
+    "⚠️ The MILC Commmunity Bot will store the following Telegram information:\n"
     "User ID, First Name, Last Name, Username\n"
     "\n"
-    "And when you want to Compete in the Competition, is requires your BSC wallet address and your Twitter login details to verify you."
+    "If you wish to enter a comprtition, you will need to provide your BSC wallet address and Twitter credentials to verify your entry."
     )
 WELCOME_TO_THE_TWITTER_SECTION: str = (
     "Welcome to the Twitter section.\n"
@@ -102,10 +102,10 @@ BOT_UNDER_MAINTENANCE: str = "Bot Under Maintenance 🛠️\nThank you for waiti
 MEDIA_NOT_FOUND: str = (
     "Media Not Found or Unavailable, Please Check Your Link And Try Again")
 RULE_MESSAGE: str = """
-Hi {first_name}, To work with the robot you must first read the following rules and then you can work with the robot\n
+Hi {first_name}, in order to activate the MILC Community Bot you must read and accept the following rules before you can interact with it.\n
 {rule_message}\n
 \n
-Do you accept the privacy laws of this robot?
+Do you accept the privacy policy of this robot? (Select Yes / No)
 """
 GOODBYE_WE_ARE_SORRY: str = (
     "Goodbye, we are sorry that we couldn't create a good experience for you")

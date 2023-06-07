@@ -90,33 +90,35 @@ add_user_wallet_keyboard = ReplyKeyboardMarkup(add_user_wallet_reply_keyboard,
 
 view_user_add_addr_reply_keyboard = [
     [ADD_ADDRESS_KEY, SHOW_TWITTER_USER_KEY],
-    [BACK_KEY],
+    [BACK_TO_HOME_KEY],
 ]
 view_user_add_addr_keyboard = ReplyKeyboardMarkup(view_user_add_addr_reply_keyboard,
                                             resize_keyboard=True)
 
 change_add_reply_keyboard = [
-    [CHANGE_ADDRESS_KEY, BACK_KEY]
+    [CHANGE_ADDRESS_KEY],
+    [BACK_KEY],
 ]
 change_add_keyboard = ReplyKeyboardMarkup(change_add_reply_keyboard,
                                             resize_keyboard=True)
 
 change_username_reply_keyboard = [
-    [CHANGE_TWITTER_USER_KEY, BACK_KEY]
+    [CHANGE_TWITTER_USER_KEY],
+    [BACK_KEY],
 ]
 change_username_keyboard = ReplyKeyboardMarkup(change_username_reply_keyboard,
                                             resize_keyboard=True)
 
 view_user_wallet_reply_keyboard = [
     [SHOW_ADDRESS_KEY, SHOW_TWITTER_USER_KEY],
-    [BACK_KEY],
+    [BACK_TO_HOME_KEY],
 ]
 view_user_wallet_keyboard = ReplyKeyboardMarkup(view_user_wallet_reply_keyboard,
                                             resize_keyboard=True)
 
 add_user_view_addr_reply_keyboard = [
     [SHOW_ADDRESS_KEY, ADD_TWITTER_USER_KEY],
-    [BACK_KEY],
+    [BACK_TO_HOME_KEY],
 ]
 add_user_view_addr_keyboard = ReplyKeyboardMarkup(add_user_view_addr_reply_keyboard,
                                             resize_keyboard=True)

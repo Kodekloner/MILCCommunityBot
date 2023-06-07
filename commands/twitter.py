@@ -1,14 +1,17 @@
 import asyncio
 import os
+import html
 import requests
 import shutil
+import re
+import json
+from datetime import datetime, timedelta
 from typing import Dict
+
 
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
-
-from Scrapetwitter.scrapetwitter import Scrapetwitter
 
 from time import sleep
 
@@ -17,27 +20,116 @@ from config.db import sqlite_conn
 from config import logger
 from utils.decorators import description, example, triggers, usage
 
+from config.options import config
+
+
+
+bearer_token = config["API"]["TWITTER_BEARER_TOKEN"]
+access_token = config["API"]["TWITTER_ACCESS_TOKEN"]
+access_token_secret = config["API"]["TWITTER_ACCESS_TOKEN_SECRET"]
+api_key = config["API"]["TWITTER_API_KEY"]
+key_secret = config["API"]["TWITTER_KEY_SECRET"]
+
 
 async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Get tweet """
     job = context.job
-    try:
-        with Scrapetwitter() as bot:
-            bot.login()
-            articles = bot.search()
-            bot.get_tweets()
-    except Exception as e:
-        if 'in PATH' in str(e):
-            print(
-                "You are trying to run the bot from command line \n"
-                "Please add to PATH your Selenium Drivers \n"
-                "Windows: \n"
-                "   set PATH=%PATH%;C:path-to-your-folder \n \n"
-                "Linux: \n"
-                "   PATH=$PATH:/path/toyour/folder/ \n"
-            )
+    endpoint = 'https://api.twitter.com/2/tweets/search/recent'
+    headers = {'authorization': f'Bearer {bearer_token}'}
+
+    cursor = sqlite_conn.cursor()
+    cursor.execute("SELECT * FROM TwitterSearch")
+
+    result = cursor.fetchone()
+
+    # # Get the current time
+    # current_time = datetime.utcnow()
+    #
+    # # Subtract one day
+    # one_day_ago = current_time - timedelta(days=1)
+    #
+    # # Format the datetime object as ISO 8601/RFC 3339
+    # iso_format = one_day_ago.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    if result:
+        search = " OR ".join(result["word"].split())
+        since_id = result["since_id"]
+        # Search item and fetch it
+        # subject = f"({result['word']} lang:en  since:{result['time']})"
+        query = f'(crypto, {search}) -is:retweet -is:reply lang:en'
+        if since_id == "" or since_id is None:
+            params = {
+                'query': query,
+                'max_results': '100',
+                'tweet.fields': 'created_at,text,attachments',
+                'expansions': 'attachments.media_keys',
+                'media.fields': 'preview_image_url,url'
+            }
         else:
-            raise
+            params = {
+                'query': query,
+                'max_results': '100',
+                'tweet.fields': 'created_at,text,attachments',
+                'expansions': 'attachments.media_keys',
+                'media.fields': 'preview_image_url,url',
+                'since_id': since_id
+            }
+
+        response = requests.get(endpoint, params=params, headers=headers)
+
+        if response.status_code == 200:
+            response_data = response.json()
+
+            print(response_data)
+
+            text = []
+            tw_id = []
+            images_url = []
+
+            if "data" in response_data:
+                for tweet in response_data["data"]:
+                    tweet_id = tweet["id"]
+                    photo_url = ''
+                    tweet_text = tweet["text"]
+
+                    if "attachments" in tweet:
+                        media_keys = tweet['attachments']['media_keys']
+                        for media in response_data["includes"]["media"]:
+                            if media["media_key"] == media_keys[0]:
+                                if "url" in media:
+                                    photo_url = media["url"]
+                                elif "preview_image_url" in media:
+                                    photo_url = media["preview_image_url"]
+
+                    cursor.execute(
+                        """INSERT INTO tweets (tw_id, tweets, images, sent) VALUES (?, ?, ?, ?)""",
+                        (
+                            tweet_id,
+                            tweet_text,
+                            photo_url,
+                            False,
+                        ),
+                    )
+
+                    print("Full text:", tweet_text)
+                    print("---")
+
+                # Update the 'sent' value to True
+                cursor.execute("UPDATE TwitterSearch SET since_id=? WHERE id=?", (response_data["meta"]["newest_id"], 1))
+            print(".........End First")
+            # Commit the changes
+            sqlite_conn.commit()
+
+            # # Close the database connection
+            # sqlite_conn.close()
+
+    else:
+        print("Search error")
+
+    # twitter_client = TwitterClient(bearer_token=bearer_token)
+    # tweets, media = twitter_client.search_tweets_by_hashtag()
+    # twitter_client.print_tweets_with_context(tweets, media)
+
 
 async def get_user_replies(time) -> Dict[str, any]:
     """Get tweet user replies"""
