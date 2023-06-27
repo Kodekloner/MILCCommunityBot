@@ -14,7 +14,7 @@ from telegram.ext import (
     Application,
     ApplicationBuilder,
     ContextTypes,
-    # PicklePersistence,
+    PicklePersistence,
 )
 
 import commands
@@ -51,14 +51,6 @@ async def post_init(application: Application) -> None:
             text=f"📝 Started @{application.bot.username} (ID: {application.bot.id}) at {datetime.datetime.now()}",
         )
 
-    # Set commands for bot instance
-    # await application.bot.set_my_commands(
-    #     [
-    #         (command.triggers[0], command.description)
-    #         for command in commands.list_of_commands
-    #     ]
-    # )
-
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
@@ -93,14 +85,14 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
         )
 
 def main():
-    # persistence = PicklePersistence(filepath="conversation states")
+    persistence = PicklePersistence(filepath="conversation_states")
     application = (
         ApplicationBuilder()
         .token(config["TELEGRAM"]["TOKEN"])
         .rate_limiter(AIORateLimiter(max_retries=10))
         .concurrent_updates(True)
         .post_init(post_init)
-        # .persistence(persistence)
+        .persistence(persistence)
         .build()
     )
 

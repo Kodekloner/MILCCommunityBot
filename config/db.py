@@ -21,9 +21,22 @@ sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()
 
+# query = f"DROP TABLE IF EXISTS prize"
+# cursor.execute(query)
+
 cursor.execute(
     """
     CREATE TABLE IF NOT EXISTS `TwitterSearch`(
+        `id` INTEGER PRIMARY KEY,
+        `word` TEXT,
+        `since_id` INTEGER
+    );
+    """
+)
+
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS `TwitterCompetitionSearch`(
         `id` INTEGER PRIMARY KEY,
         `word` TEXT,
         `since_id` INTEGER
@@ -39,6 +52,8 @@ cursor.execute(
         `tweets` TEXT NOT NULL,
         `tw_id` INTEGER,
         `images` TEXT,
+        `created_at` TEXT,
+        `username` TEXT,
         `sent` BOOLEAN
     );
     """
@@ -49,10 +64,43 @@ cursor.execute(
     CREATE TABLE IF NOT EXISTS `leaderboard` (
         `id` INTEGER PRIMARY KEY AUTOINCREMENT,
         `username` TEXT,
+        `tweets` INTEGER,
         `replies` INTEGER,
         `likes` INTEGER,
         `retweets` INTEGER,
+        `quotes` INTEGER,
         `total` INTEGER
+    );
+    """
+)
+
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS `leaderboard_time_intervals` (
+        `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+        `time_intervals` TEXT
+    );
+    """
+)
+
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS `point_system` (
+        `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+        `tweets` INTEGER,
+        `replies` INTEGER,
+        `likes` INTEGER,
+        `retweets` INTEGER,
+        `quotes` INTEGER
+    );
+    """
+)
+
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS `prize` (
+        `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+        `token` FLOAT
     );
     """
 )
@@ -63,7 +111,10 @@ cursor.execute(
         `id` INTEGER PRIMARY KEY AUTOINCREMENT,
         `userid` TEXT,
         `twitter_username` TEXT,
-        `address` TEXT
+        `address` TEXT,
+        `chat_id` TEXT,
+        `username` TEXT,
+        `ban` BOOLEAN
     );
     """
 )

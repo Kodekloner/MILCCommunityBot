@@ -16,6 +16,7 @@ from telegram.constants import ParseMode
 from constants import BACK
 from constants.keys import BACK_KEY
 from constants.keys import BACK_TO_HOME_KEY
+from constants.keys import USER_WALLET_KEY
 from constants.messages import SEND_YOUR_MESSAGE
 from constants.messages import WELCOME_TO_HOME
 from constants.states import HOME_STATE
@@ -46,7 +47,6 @@ from utils.decorators import send_action
 logger = getLogger(__name__)
 
 
-
 def verify_bsc_wallet_address(address):
     # Connect to the BSC network using a Web3 provider
     w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))  # Use an appropriate BSC node URL
@@ -56,6 +56,22 @@ def verify_bsc_wallet_address(address):
         return True
     else:
         return False
+
+@send_action(ChatAction.TYPING)
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "MILC Community Bot allows you to earn rewards by promoting and spreading the word about the MILC project on Twitter. To make this work, the Bot has a Competition function and integrated Reward Distributions.\n"
+        "\n"
+        "**What's the point of it?**\n"
+        "\n"
+        "With your help and the incentives that come with it, we want to increase the visibility and reach of the MILC project.\n"
+        "\n"
+        "You Can also take part in the competition to get rewarded\n\n"
+        f"Use top on <b>{USER_WALLET_KEY}</b>\n"
+        "follow through with the messages",
+        reply_markup=base_keyboard,
+        parse_mode=ParseMode.HTML,
+    )
 
 @send_action(ChatAction.TYPING)
 async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -133,6 +149,9 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
 
     elif verify_bsc_wallet_address(address):
         user_id = update.effective_user.id
+        telegram_username = update.effective_user.username
+        chat_id = update.effective_chat.id
+        ban = False
         cursor = sqlite_conn.cursor()
         cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
         result = cursor.fetchone()
@@ -154,7 +173,7 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
             #     )
             #     return STORE_USERNAME_STATE
         else:
-            cursor.execute("INSERT INTO user_wallet_twitter (userid, address) VALUES (?,?)", (user_id, address))
+            cursor.execute("INSERT INTO user_wallet_twitter (userid, address, chat_id, username, ban) VALUES (?,?,?,?,?)", (user_id, address, chat_id, telegram_username, ban))
             sqlite_conn.commit()
             await update.message.reply_text(
                 "Congratulation!, Your Wallet address has be saved successfully ✅, Enter Your Twitter username Next",
@@ -211,6 +230,10 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return ADD_USER_WALLET_STATE
     else:
         user_id = update.effective_user.id
+        telegram_username = update.effective_user.username
+        chat_id = update.effective_chat.id
+        ban = False
+
         cursor = sqlite_conn.cursor()
         cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
         result = cursor.fetchone()
@@ -230,7 +253,7 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             #     )
             #     return STORE_ADDRESS_STATE
         else:
-            cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username) VALUES (?,?)", (user_id, username))
+            cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username, chat_id, username, ban) VALUES (?,?,?,?,?)", (user_id, username, chat_id, telegram_username, ban))
             await update.message.reply_text(
                 "Congratulation!, your Twitter username was added Successfully. Add your Address if you haven't",
                 reply_markup=back_keyboard,
@@ -283,6 +306,7 @@ async def opt_change_address(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
         return OPT_CHANGE_ADDRESS_STATE
 
+@send_action(ChatAction.TYPING)
 async def store_change_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     message = update.message.text
     if message == "Back ◀️":
@@ -403,7 +427,6 @@ async def store_change_username(update: Update, context: ContextTypes.DEFAULT_TY
                 reply_markup=view_user_wallet_keyboard,
             )
             return VIEW_USER_WALLET_STATE
-
 
 @send_action(ChatAction.TYPING)
 async def back_to_home(update: Update,

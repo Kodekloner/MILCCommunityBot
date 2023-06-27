@@ -1,4 +1,84 @@
-INSTAGRAM_ASSISTANT_ID: str = "🆔 @InstagramAssistantRobot"
+SET_POINT_SYSTEM_WITH_POINTS: str = (
+    "Each *Tweet* is {tweet} point(s).\n"
+    "Each *replies* is {reply} point(s).\n"
+    "Each *likes* is {like} point(s).\n"
+    "Each *retweet* is {retweet} point(s).\n"
+    "Each *quote* is {quote} point(s).\n"
+    "\n"
+    "To change the point tap on the Change points 📝"
+)
+
+SET_POINT_SYSTEM: str = (
+    "To set point for the competition tap on the Set points"
+)
+
+SET_PRIZE_SYSTEM: str = (
+    "To set prize for the competition tap on the Set prize"
+)
+
+MESSAGE_FOR_SET_POINT: str = (
+    "Please set the competition point in the following format: \n"
+    "\n"
+    "tweets-1\n"
+    "replies-1\n"
+    "likes-1\n"
+    "retweets-1\n"
+    "quotes-1\n"
+    "\n"
+)
+
+MESSAGE_FOR_SET_PRIZE: str = (
+    "Please set the competition prize in the following format: \n"
+    "\n"
+    "5.002\n"
+    "4\n"
+    "3.005\n"
+    "2.006\n"
+    "1.08\n"
+    "\n"
+    "Note:\n"
+    "these prize could be any value but the first on the top will be for the first position,\n"
+    "the second on the list will be for the second postion, in that order."
+)
+
+MESSAGE_FOR_CHANGE_PRIZE: str = (
+    "Please set the competition prize in the following format: \n"
+    "positions-prizes\n"
+    "Example:"
+    "\n"
+    "1-5.002\n"
+    "4-4\n"
+    "\n"
+    "Note:\n"
+    "these prize could be any value but the first number is the position,\n"
+    "the number after the '-' is the second prize."
+)
+
+MESSAGE_FOR_CHANGE_POINT: str = (
+    "Please change the competition point in the following format: \n"
+    "\n"
+    "tweets-1\n"
+    "replies-1\n"
+    "likes-1\n"
+    "retweets-1\n"
+    "quotes-1\n"
+    "\n"
+)
+
+MESSAGE_FOR_WRONG_SET_POINT: str = (
+    "You already set the points to,\n"
+    "tap on Change points 📝, to change the points"
+)
+
+MESSAGE_FOR_WRONG_SET_PRIZE: str = (
+    "You already set the prize,\n"
+    "tap on Change points 📝, to change the points"
+)
+
+MESSAGE_FOR_WRONG_CHANGE_PRIZE: str = (
+    "You haven't set the prize yet, plase do so first,\n"
+)
+
 MESSAGE_FOR_GET_LOGIN_DATA: str = (
     "Please send me login information in the following format and format: \n"
     "\n"
@@ -26,7 +106,7 @@ IS_VIDEO: str = "video"
 WELCOME_MESSAGE: str = (
     "Hello {first_name}, welcome to MILC Community Bot.\n"
     "\n"
-    "**Before we start, what can the bot actually do?**\n"
+    "**Before we start, what can the Bot actually do?**\n"
     "\n"
     "MILC Community Bot allows you to earn rewards by promoting and spreading the word about the MILC project on Twitter. To make this work, the Bot has a Competition function and integrated Reward Distributions.\n"
     "\n"
@@ -82,11 +162,11 @@ PRIVACY_MESSAGE: str = (
     "⚠️ The MILC Commmunity Bot will store the following Telegram information:\n"
     "User ID, First Name, Last Name, Username\n"
     "\n"
-    "If you wish to enter a comprtition, you will need to provide your BSC wallet address and Twitter credentials to verify your entry."
+    "If you wish to enter the competition, you will need to provide your BSC wallet address and Twitter credentials to verify your entry."
     )
 WELCOME_TO_THE_TWITTER_SECTION: str = (
     "Welcome to the Twitter section.\n"
-    "Choose the topic to Search, Date and Send Tweets to users 👇")
+    "Choose the topic to Search and then tap on Send 💬")
 WELL_YOU_WANT_TO_DO_THE_LOTTERY_ON_WHAT_BASIS: str = (
     "Well you want to do the lottery on what basis:")
 REMEMBER_ME: str = "Is your session saved for the next login?"

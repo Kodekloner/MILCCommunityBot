@@ -41,10 +41,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
             text=GOODBYE_WE_ARE_SORRY.format(first_name=first_name),
         )
         return ConversationHandler.END
-    # create_user(user_id, first_name, last_name, username)
-    await update.message.reply_text(
-        WELCOME_MESSAGE.format(first_name=first_name),
-        reply_markup=base_keyboard,
-        parse_mode=ParseMode.MARKDOWN,
-    )
-    return HOME_STATE
+    elif message == YES:
+        # create_user(user_id, first_name, last_name, username)
+        await update.message.reply_text(
+            WELCOME_MESSAGE.format(first_name=first_name),
+            reply_markup=base_keyboard,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return HOME_STATE
+    else:
+        """Handle invalid messages."""
+        message = update.message
+        reply_text = "I'm sorry, but I didn't understand that command or Message."
+        reply_text += "\n\nHere are some suggestions:"
+        reply_text += "\n- Use the keys on the keyboard to Send me Message."
+
+        await message.reply_text(reply_text)
