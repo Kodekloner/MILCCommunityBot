@@ -243,10 +243,23 @@ async def back_to_admin(update: Update,
 @restricted
 @send_action(ChatAction.TYPING)
 async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    await update.message.reply_text(
-        "Which Subject would you like to search on twitter. Example 'MLT #MILC @MILCplatform' without the ''.",
-        reply_markup=back_keyboard,
-    )
+    cursor = sqlite_conn.cursor()
+    cursor.execute("SELECT * FROM TwitterSearch")
+    result = cursor.fetchone()
+    if result:
+        print(result['word'])
+        await update.message.reply_text(
+            "These Keywords are been searched already\n\n"
+            f"<b><em>{result['word']}</em></b>\n\n"
+            "Change the Keywords would you like to search on twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\nMLT AND #MILC AND @MILCplatform",
+            reply_markup=back_keyboard,
+            parse_mode=ParseMode.HTML,
+        )
+    else:
+        await update.message.reply_text(
+            "Set the Keywords would you like to search on twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\nMLT AND #MILC AND @MILCplatform",
+            reply_markup=back_keyboard,
+        )
     return SEARCH_STATE
 
 @restricted
@@ -785,7 +798,7 @@ async def view_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             message += entry
 
         # Add emojis and formatting
-        message = "👨‍💼 <b>participant</b> 👩‍💼\n\n" + message
+        message = "👨‍💼 <b>Participant</b> 👩‍💼\n\n" + message
 
         await update.message.reply_text(
             message,
@@ -794,7 +807,7 @@ async def view_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
     else:
         await update.message.reply_text(
-            "You don't have a participant yet",
+            "You don't have a Participant yet",
             reply_markup=participant_keyboard,
         )
     return PARTICIPANT_STATE
@@ -1262,8 +1275,9 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         )
         return TWITTER_STATE
 
-    context.job_queue.run_daily(get_tweets, time=datetime.time(23, 30), chat_id=chat_id, name=str(chat_id))
-    context.job_queue.run_repeating(send_tweets, interval=600, first=10, chat_id=chat_id, name=str(chat_id))
+    context.job_queue.run_repeating(get_tweets, interval=86400, first=5, chat_id=chat_id, name=str(chat_id))
+    # context.job_queue.run_daily(get_tweets, time=datetime.time(23, 30), chat_id=chat_id, name=str(chat_id))
+    context.job_queue.run_repeating(send_tweets, interval=600, first=60, chat_id=chat_id, name=str(chat_id))
 
 
     await update.message.reply_text(

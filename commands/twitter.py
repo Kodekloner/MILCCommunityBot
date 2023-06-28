@@ -53,19 +53,22 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     result = cursor.fetchone()
 
-    # # Get the current time
-    # current_time = datetime.utcnow()
-    #
-    # # Subtract one day
-    # one_day_ago = current_time - timedelta(days=1)
-    #
-    # # Format the datetime object as ISO 8601/RFC 3339
-    # iso_format = one_day_ago.strftime('%Y-%m-%dT%H:%M:%SZ')
+    # Get the current time
+    current_time = datetime.utcnow()
+
+    # Subtract one day
+    one_day_ago = current_time - timedelta(days=1)
+
+    # Format the datetime object as ISO 8601/RFC 3339
+    iso_format = one_day_ago.strftime('%Y-%m-%dT%H:%M:%SZ')
+    print(iso_format)
 
     if result:
-        search = " OR ".join(result["word"].split())
+        # search = " OR ".join(result["word"].split())
+        search = result["word"].split()
         since_id = result["since_id"]
-        query = f'(crypto, {search}) -is:retweet -is:reply lang:en'
+        # query = f'(crypto, {search}) -is:retweet -is:reply lang:en'
+        query = f'({search}) -is:retweet -is:reply lang:en'
         if since_id == "" or since_id is None:
             params = {
                 'query': query,

@@ -315,7 +315,7 @@ async def store_change_address(update: Update, context: ContextTypes.DEFAULT_TYP
         cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
         result = cursor.fetchone()
         await update.message.reply_text(
-            f"Your username is {result['address']}",
+            f"Your wallet is {result['address']}",
             reply_markup=change_add_keyboard,
         )
         return OPT_CHANGE_ADDRESS_STATE
