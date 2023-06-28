@@ -65,7 +65,7 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if result:
         # search = " OR ".join(result["word"].split())
-        search = result["word"].split()
+        search = result["word"].strip()
         since_id = result["since_id"]
         print(search)
         # query = f'(crypto, {search}) -is:retweet -is:reply lang:en'
@@ -78,7 +78,8 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
                 'tweet.fields': 'created_at,text,attachments,author_id',
                 'expansions': 'attachments.media_keys,author_id',
                 'media.fields': 'preview_image_url,url',
-                'user.fields': 'username'
+                'user.fields': 'username',
+                'start_time': iso_format
             }
         else:
             params = {

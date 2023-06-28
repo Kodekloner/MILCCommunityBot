@@ -1263,6 +1263,14 @@ async def store_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 @restricted
 @send_action(ChatAction.TYPING)
 async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    cursor = sqlite_conn.cursor()
+    cursor.excute("SELECT * FROM tweets")
+    results = cursor.fetchall()
+    if results:
+        cursor.execute("DELETE FROM tweets")
+        cursor.execute("UPDATE TwitterSearch SET since_id=? WHERE id=?", (None, 1))
+        sqlite_conn.commit()
+
     """Add a job to the queue."""
     chat_id = update.effective_message.chat_id
 
