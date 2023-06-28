@@ -67,8 +67,10 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
         # search = " OR ".join(result["word"].split())
         search = result["word"].split()
         since_id = result["since_id"]
+        print(search)
         # query = f'(crypto, {search}) -is:retweet -is:reply lang:en'
         query = f'({search}) -is:retweet -is:reply lang:en'
+        print(query)
         if since_id == "" or since_id is None:
             params = {
                 'query': query,
@@ -134,7 +136,6 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                 # Update the 'sent' value to True
                 cursor.execute("UPDATE TwitterSearch SET since_id=? WHERE id=?", (response_data["meta"]["newest_id"], 1))
-            print(".........End First")
             # Commit the changes
             sqlite_conn.commit()
 
@@ -143,6 +144,7 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
 
         else:
             print(response.status_code)
+            print(response.text)
 
     else:
         print("Search error")
