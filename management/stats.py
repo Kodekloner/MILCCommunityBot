@@ -7,8 +7,8 @@ from telegram.ext import ContextTypes
 import commands
 import utils.string
 from config.db import sqlite_conn
-from utils import readable_time
-from utils.decorators import description, example, triggers, usage
+# from utils import readable_time
+# from utils.decorators import description, example, triggers, usage
 
 from pymongo import MongoClient
 from config.options import config
@@ -29,62 +29,64 @@ async def increment(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message:
         return
 
+    title = update.message.chat.title
+    chat_type = update.message.chat.type
     chat_id = update.message.chat.id
     user_object = update.message.from_user
 
-    user_details = [
-        {"field": f"seen:{user_object.username}", "value": round(datetime.now().timestamp())},
-        {"field": f"user_id:{user_object.id}", "value": user_object.username or user_object.first_name},
-        {"field": f"username:{user_object.username or user_object.first_name}", "value": user_object.id}
-    ]
-
-    # Set last seen time in MongoDB
-    user.insert_many(user_details)
+    # user_details = [
+    #     {"field": f"seen:{user_object.username}", "value": round(datetime.now().timestamp())},
+    #     {"field": f"user_id:{user_object.id}", "value": user_object.username or user_object.first_name},
+    #     {"field": f"username:{user_object.username or user_object.first_name}", "value": user_object.id}
+    # ]
+    #
+    # # Set last seen time in MongoDB
+    # user.insert_many(user_details)
 
     cursor = sqlite_conn.cursor()
     cursor.execute(
-        f"INSERT INTO chat_stats (chat_id, user_id) VALUES (?, ?)",
-        (chat_id, user_object.id),
+        f"INSERT INTO chat_stats (chat_id, user_id, title, type) VALUES (?, ?, ?, ?)",
+        (chat_id, user_object.id, title, chat_type),
     )
 
 
-async def stat_string_builder(
-    rows: list,
-    message: Message,
-    context: ContextTypes.DEFAULT_TYPE,
-    total_count: int,
-) -> None:
-    if not rows:
-        await message.reply_text("No messages recorded.")
-        return
-
-    text = f"Stats for <b>{message.chat.title}:</b>\n\n"
-    for _, _, timestamp, user_id, count in rows:
-        percent = round(count / total_count * 100, 2)
-        text += f"""<code>{percent:4.1f}% - {await utils.string.get_first_name(user_id, context)}</code>\n"""
-
-    text += f"\nTotal messages: <b>{total_count}</b>"
-    await message.reply_text(
-        text,
-        parse_mode=ParseMode.HTML,
-    )
-
-
-@triggers(["seen"])
-@usage("/seen [username]")
-@example("/seen @obviyus")
-@description("Get duration since last message of a user.")
-async def get_last_seen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not context.args:
-        await commands.usage_string(update.message, get_last_seen)
-        return
-
-    username = context.args[0].split("@")
-    if len(username) <= 1:
-        await commands.usage_string(update.message, get_last_seen)
-        return
-
-    username = username[1]
+# async def stat_string_builder(
+#     rows: list,
+#     message: Message,
+#     context: ContextTypes.DEFAULT_TYPE,
+#     total_count: int,
+# ) -> None:
+#     if not rows:
+#         await message.reply_text("No messages recorded.")
+#         return
+#
+#     text = f"Stats for <b>{message.chat.title}:</b>\n\n"
+#     for _, _, timestamp, user_id, count in rows:
+#         percent = round(count / total_count * 100, 2)
+#         text += f"""<code>{percent:4.1f}% - {await utils.string.get_first_name(user_id, context)}</code>\n"""
+#
+#     text += f"\nTotal messages: <b>{total_count}</b>"
+#     await message.reply_text(
+#         text,
+#         parse_mode=ParseMode.HTML,
+#     )
+#
+#
+# @triggers(["seen"])
+# @usage("/seen [username]")
+# @example("/seen @obviyus")
+# @description("Get duration since last message of a user.")
+# async def get_last_seen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+#     if not context.args:
+#         await commands.usage_string(update.message, get_last_seen)
+#         return
+#
+#     username = context.args[0].split("@")
+#     if len(username) <= 1:
+#         await commands.usage_string(update.message, get_last_seen)
+#         return
+#
+#     username = username[1]
 
     # Get last seen time in Redis
     # last_seen = redis.get(f"seen:{username}")
@@ -105,73 +107,73 @@ async def get_last_seen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # )
 
 
-@usage("/stats")
-@example("/stats")
-@triggers(["stats"])
-@description("Get message count by user for the last day.")
-async def get_chat_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.message.chat_id
-
-    cursor = sqlite_conn.cursor()
-    cursor.execute(
-        """SELECT *, COUNT(user_id) AS user_count
-        FROM chat_stats
-        WHERE chat_id = ? AND
-        create_time >= DATE('now', 'localtime') AND create_time < DATE('now', '+1 day', 'localtime')
-        GROUP BY user_id
-        ORDER BY COUNT(user_id) DESC
-        LIMIT 10;
-        """,
-        (chat_id,),
-    )
-
-    users = cursor.fetchall()
-    cursor.execute(
-        """SELECT COUNT(id) AS total_count
-        FROM chat_stats
-        WHERE chat_id = ? AND
-        create_time >= DATE('now', 'localtime') AND create_time < DATE('now', '+1 day', 'localtime');
-        """,
-        (chat_id,),
-    )
-
-    await stat_string_builder(
-        users, update.message, context, cursor.fetchone()["total_count"]
-    )
-
-
-@usage("/gstats")
-@example("/gstats")
-@triggers(["gstats"])
-@description("Get total message count by user of this group.")
-async def get_total_chat_stats(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    chat_id = update.message.chat_id
-
-    cursor = sqlite_conn.cursor()
-    cursor.execute(
-        """
-        SELECT *, COUNT(user_id) AS user_count
-        FROM chat_stats
-        WHERE chat_id = ?
-        GROUP BY user_id
-        ORDER BY COUNT(user_id) DESC
-        LIMIT 10;
-        """,
-        (chat_id,),
-    )
-
-    users = cursor.fetchall()
-    cursor.execute(
-        """
-        SELECT COUNT(id) AS total_count
-        FROM chat_stats
-        WHERE chat_id = ?;
-        """,
-        (chat_id,),
-    )
-
-    await stat_string_builder(
-        users, update.message, context, cursor.fetchone()["total_count"]
-    )
+# @usage("/stats")
+# @example("/stats")
+# @triggers(["stats"])
+# @description("Get message count by user for the last day.")
+# async def get_chat_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+#     chat_id = update.message.chat_id
+#
+#     cursor = sqlite_conn.cursor()
+#     cursor.execute(
+#         """SELECT *, COUNT(user_id) AS user_count
+#         FROM chat_stats
+#         WHERE chat_id = ? AND
+#         create_time >= DATE('now', 'localtime') AND create_time < DATE('now', '+1 day', 'localtime')
+#         GROUP BY user_id
+#         ORDER BY COUNT(user_id) DESC
+#         LIMIT 10;
+#         """,
+#         (chat_id,),
+#     )
+#
+#     users = cursor.fetchall()
+#     cursor.execute(
+#         """SELECT COUNT(id) AS total_count
+#         FROM chat_stats
+#         WHERE chat_id = ? AND
+#         create_time >= DATE('now', 'localtime') AND create_time < DATE('now', '+1 day', 'localtime');
+#         """,
+#         (chat_id,),
+#     )
+#
+#     await stat_string_builder(
+#         users, update.message, context, cursor.fetchone()["total_count"]
+#     )
+#
+#
+# @usage("/gstats")
+# @example("/gstats")
+# @triggers(["gstats"])
+# @description("Get total message count by user of this group.")
+# async def get_total_chat_stats(
+#     update: Update, context: ContextTypes.DEFAULT_TYPE
+# ) -> None:
+#     chat_id = update.message.chat_id
+#
+#     cursor = sqlite_conn.cursor()
+#     cursor.execute(
+#         """
+#         SELECT *, COUNT(user_id) AS user_count
+#         FROM chat_stats
+#         WHERE chat_id = ?
+#         GROUP BY user_id
+#         ORDER BY COUNT(user_id) DESC
+#         LIMIT 10;
+#         """,
+#         (chat_id,),
+#     )
+#
+#     users = cursor.fetchall()
+#     cursor.execute(
+#         """
+#         SELECT COUNT(id) AS total_count
+#         FROM chat_stats
+#         WHERE chat_id = ?;
+#         """,
+#         (chat_id,),
+#     )
+#
+#     await stat_string_builder(
+#         users, update.message, context, cursor.fetchone()["total_count"]
+#     )

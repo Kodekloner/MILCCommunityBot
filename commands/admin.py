@@ -165,11 +165,42 @@ def are_user_ids_integers(user_ids):
 @restricted
 @send_action(ChatAction.TYPING)
 async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+
     await update.message.reply_text(
         WELCOME_TO_ADMIN,
         reply_markup=admin_keyboard,
+        parse_mode=ParseMode.HTML,
     )
     return ADMIN_STATE
+    # return ConversationHandler.END
+
+@restricted
+@send_action(ChatAction.TYPING)
+async def get_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    cursor = sqlite_conn.cursor()
+    cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
+    rows = cursor.fetchall()
+
+    if rows:
+        message = ""
+
+        for index, row in enumerate(rows, start=1):
+            title = row["title"]
+            print(title)
+            entry = f"{index}. <b>{title}</b>\n"
+            message += entry
+
+        # Add emojis and formatting
+        message = "<b>Groups that use the Bot</b>\n\n" + message
+    else:
+        message = "<b>Groups that use the Bot</b>\n\nNone"
+
+    await update.message.reply_text(
+        text=message,
+        reply_markup=base_keyboard,
+        parse_mode=ParseMode.HTML,
+    )
+    return HOME_STATE
 
 @restricted
 @send_action(ChatAction.TYPING)
@@ -237,6 +268,7 @@ async def back_to_admin(update: Update,
     await update.message.reply_text(
         WELCOME_TO_ADMIN,
         reply_markup=admin_keyboard,
+        parse_mode=ParseMode.HTML,
     )
     return ADMIN_STATE
 
@@ -251,13 +283,13 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         await update.message.reply_text(
             "These Keywords are been searched already\n\n"
             f"<b><em>{result['word']}</em></b>\n\n"
-            "Change the Keywords would you like to search on twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\nMLT AND #MILC AND @MILCplatform",
+            "Change the Keywords would you like to search on twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\nMLT #MILC @MILCplatform",
             reply_markup=back_keyboard,
             parse_mode=ParseMode.HTML,
         )
     else:
         await update.message.reply_text(
-            "Set the Keywords would you like to search on twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\nMLT AND #MILC AND @MILCplatform",
+            "Set the Keywords would you like to search on twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\nMLT #MILC @MILCplatform",
             reply_markup=back_keyboard,
         )
     return SEARCH_STATE
@@ -521,7 +553,7 @@ async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     current_time = datetime.now()
 
     # Subtract one day from the current timestamp
-    previous_day = current_time - timedelta(days=2)
+    previous_day = current_time - timedelta(days=1)
 
     # Format the previous day as "YYYY-MM-DD"
     # formatted_time = previous_day.strftime("%Y-%m-%d")
@@ -1264,7 +1296,7 @@ async def store_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 @send_action(ChatAction.TYPING)
 async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     cursor = sqlite_conn.cursor()
-    cursor.excute("SELECT * FROM tweets")
+    cursor.execute("SELECT * FROM tweets")
     results = cursor.fetchall()
     if results:
         cursor.execute("DELETE FROM tweets")

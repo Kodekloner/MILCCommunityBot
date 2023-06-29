@@ -61,7 +61,6 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Format the datetime object as ISO 8601/RFC 3339
     iso_format = one_day_ago.strftime('%Y-%m-%dT%H:%M:%SZ')
-    print(iso_format)
 
     if result:
         # search = " OR ".join(result["word"].split())
@@ -144,11 +143,18 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
             # sqlite_conn.close()
 
         else:
+            await context.bot.send_message(job.chat_id,
+                "❌ <b>There was an Error with your keywords combination</b>",
+                parse_mode=ParseMode.HTML,
+            )
             print(response.status_code)
             print(response.text)
 
     else:
-        print("Search error")
+        await context.bot.send_message(job.chat_id,
+            "<b>❌ Please set the Keywords</b>",
+            parse_mode=ParseMode.HTML,
+        )
 
 async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Get tweet """
@@ -329,34 +335,44 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
     job = context.job
     cursor = sqlite_conn.cursor()
-    cursor.execute(
-        """
-        SELECT * FROM `tweets` WHERE sent = ? ORDER BY id DESC LIMIT 1
-        """,
-        (False,),
-    )
+    cursor.execute("SELECT DISTINCT chat_id FROM chat_stats WHERE type LIKE '%group%';")
+    results = cursor.fetchall()
 
-    rows = cursor.fetchone()
-
-    if not rows:
-        return
-    elif rows['images'] != "":
-        image_url = rows['images']
-        tweet_text = rows['tweets']
-        await context.bot.send_photo(job.chat_id, photo=image_url, caption=tweet_text)
-
-    else:
-        text = f"\n{rows['tweets']}"
-        await context.bot.send_message(job.chat_id,
-            text=text,
-            parse_mode=ParseMode.HTML,
+    if results:
+        cursor.execute(
+            """
+            SELECT * FROM `tweets` WHERE sent = ? ORDER BY id DESC LIMIT 1
+            """,
+            (False,),
         )
-    cursor.execute(
-        """
-        UPDATE tweets SET sent=? WHERE id=?;
-        """,
-        (True, rows['id']),
-    )
+
+        rows = cursor.fetchone()
+
+        if not rows:
+            return
+        elif rows['images'] != "":
+            image_url = rows['images']
+            tweet_text = rows['tweets']
+            for result in results:
+                await context.bot.send_photo(result['chat_id'], photo=image_url, caption=tweet_text)
+
+        else:
+            tweet_text = f"\n{rows['tweets']}"
+            for result in results:
+                await context.bot.send_message(result['chat_id'],
+                    text=tweet_text,
+                    parse_mode=ParseMode.HTML,
+                )
+        cursor.execute(
+            """
+            UPDATE tweets SET sent=? WHERE id=?;
+            """,
+            (True, rows['id']),
+        )
+    # await context.bot.send_message(job.chat_id,
+    #     text=text,
+    #     parse_mode=ParseMode.HTML,
+    # )
 
 async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
     job = context.job

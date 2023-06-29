@@ -97,6 +97,7 @@ def base_conversation_handler():
                                wallet.wallet),
                 CommandHandler("admin", admin.admin),
                 CommandHandler("addadmin", admin.add_admin),
+                CommandHandler("groups", admin.get_groups),
                 CommandHandler("start", start.start),
             ],
             ADD_USER_WALLET_STATE: [
@@ -108,6 +109,7 @@ def base_conversation_handler():
                                wallet.back_to_home),
                 CommandHandler("admin", admin.admin),
                 CommandHandler("addadmin", admin.add_admin),
+                CommandHandler("groups", admin.get_groups),
             ],
             VIEW_USER_WALLET_STATE: [
                 MessageHandler(filters.Regex(f"^{SHOW_ADDRESS_KEY}$"),

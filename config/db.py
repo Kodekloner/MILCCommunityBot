@@ -21,8 +21,22 @@ sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()
 
-# query = f"DROP TABLE IF EXISTS prize"
+# query = f"DROP TABLE IF EXISTS chat_stats"
 # cursor.execute(query)
+
+# Chat Statistics Table
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS chat_stats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chat_id INTEGER NOT NULL,
+        create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+        user_id INTEGER NOT NULL,
+        title TEXT,
+        type TEXT
+    )
+    """
+)
 
 cursor.execute(
     """
