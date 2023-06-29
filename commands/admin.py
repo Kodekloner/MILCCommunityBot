@@ -86,12 +86,25 @@ logger = getLogger(__name__)
 async def handle_invalid_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle invalid messages."""
     message = update.message
-    reply_text = "I'm sorry, but I didn't understand that command or Message."
-    reply_text += "\n\nHere are some suggestions:"
-    reply_text += "\n- Please make sure you're using the correct command."
-    reply_text += "\n- Use the keys on the keyboard to Send me Message."
+    chat = update.effective_chat
 
-    await message.reply_text(reply_text)
+    #Check if message is a command orspecifically mentions the bot's username
+    if message.text.startswith("/") or context.bot.username.lower() in message.text.lower() or message.reply_to_message and message.reply_to_message.from_user.id == context.bot.id:
+        reply_text = "I'm sorry, but I didn't understand that command or Message."
+        reply_text += "\n\nHere are some suggestions:"
+        reply_text += "\n- Please make sure you're using the correct command."
+        reply_text += "\n- Use the keys on the keyboard to Send me Message."
+
+        await message.reply_text(reply_text)
+    elif chat.type == "private":
+        reply_text = "I'm sorry, but I didn't understand that command or Message."
+        reply_text += "\n\nHere are some suggestions:"
+        reply_text += "\n- Please make sure you're using the correct command."
+        reply_text += "\n- Use the keys on the keyboard to Send me Message."
+
+        await message.reply_text(reply_text)
+    else:
+        return
 
 
 # Function to update the values in the SQL table
