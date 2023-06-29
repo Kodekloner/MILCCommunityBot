@@ -1330,7 +1330,7 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     context.job_queue.run_repeating(get_tweets, interval=86400, first=5, chat_id=chat_id, name=str(chat_id))
     # context.job_queue.run_daily(get_tweets, time=datetime.time(23, 30), chat_id=chat_id, name=str(chat_id))
-    context.job_queue.run_repeating(send_tweets, interval=600, first=60, chat_id=chat_id, name=str(chat_id))
+    context.job_queue.run_repeating(send_tweets, interval=30, first=30, chat_id=chat_id, name=str(chat_id))
 
 
     await update.message.reply_text(
