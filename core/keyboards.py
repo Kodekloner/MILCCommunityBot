@@ -12,8 +12,13 @@ from constants.keys import ADMIN_KEY
 from constants.keys import TWITTER_KEY
 from constants.keys import SEARCH_KEY
 from constants.keys import DATE_KEY
+from constants.keys import GET_TWEETS_KEY
 from constants.keys import SEND_TWEETS_KEY
+from constants.keys import PROCEED_KEY
+from constants.keys import STOP_GET_TWEETS_KEY
+from constants.keys import STOP_SEND_TWEETS_KEY
 from constants.keys import STOP_SENDIND_TWEETS_KEY
+from constants.keys import UPLOAD_PHOTO_KEY
 from constants.keys import COMPETITION_KEY
 from constants.keys import ADMIN_WALLET_KEY
 from constants.keys import SETUP_POINTS_KEY
@@ -83,10 +88,46 @@ admin_keyboard = ReplyKeyboardMarkup(admin_reply_keyboard,
                                      resize_keyboard=True, selective=True)
 
 twitter_reply_keyboard = [
-    [SEARCH_KEY, SEND_TWEETS_KEY, STOP_SENDIND_TWEETS_KEY],
+    [SEARCH_KEY, UPLOAD_PHOTO_KEY],
+    [SEND_TWEETS_KEY, STOP_SENDIND_TWEETS_KEY],
     [BACK_KEY],
 ]
 twitter_keyboard = ReplyKeyboardMarkup(twitter_reply_keyboard,
+                                       resize_keyboard=True, selective=True)
+
+get_send_tweets_reply_keyboard = [
+    [GET_TWEETS_KEY, SEND_TWEETS_KEY],
+    [BACK_KEY],
+]
+get_send_tweets_keyboard = ReplyKeyboardMarkup(get_send_tweets_reply_keyboard,
+                                       resize_keyboard=True, selective=True)
+
+stop_get_send_tweets_reply_keyboard = [
+    [STOP_GET_TWEETS_KEY, STOP_SEND_TWEETS_KEY],
+    [BACK_KEY],
+]
+stop_get_send_tweets_keyboard = ReplyKeyboardMarkup(stop_get_send_tweets_reply_keyboard,
+                                       resize_keyboard=True, selective=True)
+
+select_group_reply_keyboard = [
+    [PROCEED_KEY],
+    [BACK_KEY],
+]
+select_group_keyboard = ReplyKeyboardMarkup(select_group_reply_keyboard,
+                                       resize_keyboard=True, selective=True)
+
+send_tweets_reply_keyboard = [
+    [SEND_TWEETS_KEY],
+    [BACK_KEY],
+]
+send_tweets_keyboard = ReplyKeyboardMarkup(send_tweets_reply_keyboard,
+                                       resize_keyboard=True, selective=True)
+
+stop_send_tweets_reply_keyboard = [
+    [STOP_SEND_TWEETS_KEY],
+    [BACK_KEY],
+]
+stop_send_tweets_keyboard = ReplyKeyboardMarkup(stop_send_tweets_reply_keyboard,
                                        resize_keyboard=True, selective=True)
 
 competition_reply_keyboard = [
@@ -116,6 +157,20 @@ leaderboard_setting_reply_keyboard = [
     [BACK_KEY],
 ]
 leaderboard_setting_keyboard = ReplyKeyboardMarkup(leaderboard_setting_reply_keyboard,
+                                            resize_keyboard=True, selective=True)
+
+display_leaderboard_reply_keyboard = [
+    [DISPLAY_BOARD_KEY],
+    [BACK_KEY],
+]
+display_leaderboard_keyboard = ReplyKeyboardMarkup(display_leaderboard_reply_keyboard,
+                                            resize_keyboard=True, selective=True)
+
+hide_leaderboard_reply_keyboard = [
+    [HIDE_BOARD_KEY],
+    [BACK_KEY],
+]
+hide_leaderboard_keyboard = ReplyKeyboardMarkup(hide_leaderboard_reply_keyboard,
                                             resize_keyboard=True, selective=True)
 
 leaderboard_time_settings_reply_keyboard = [

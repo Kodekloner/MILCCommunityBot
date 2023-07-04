@@ -21,7 +21,7 @@ sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()
 
-# query = f"DROP TABLE IF EXISTS chat_stats"
+# query = f"DROP TABLE IF EXISTS admin_wallet"
 # cursor.execute(query)
 
 # Chat Statistics Table
@@ -90,6 +90,17 @@ cursor.execute(
 
 cursor.execute(
     """
+    CREATE TABLE IF NOT EXISTS `groups_activities` (
+        `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+        `group_name` TEXT,
+        `send_tweets` BOOLEAN,
+        `competition` BOOLEAN
+    );
+    """
+)
+
+cursor.execute(
+    """
     CREATE TABLE IF NOT EXISTS `leaderboard_time_intervals` (
         `id` INTEGER PRIMARY KEY AUTOINCREMENT,
         `time_intervals` TEXT
@@ -139,7 +150,8 @@ cursor.execute(
         `id` INTEGER PRIMARY KEY AUTOINCREMENT,
         `address` TEXT,
         `private_key` TEXT,
-        `mnemonic` TEXT
+        `mnemonic` TEXT,
+        `balance` FLOAT
     );
     """
 )

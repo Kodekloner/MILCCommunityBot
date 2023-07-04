@@ -1,9 +1,12 @@
 from logging import getLogger
 
-from telegram.ext import CommandHandler
-from telegram.ext import ConversationHandler
-from telegram.ext import filters
-from telegram.ext import MessageHandler
+from telegram.ext import (
+    CommandHandler,
+    ConversationHandler,
+    filters,
+    MessageHandler,
+    CallbackQueryHandler,
+)
 
 from commands import admin
 from commands import privacy
@@ -21,6 +24,7 @@ from constants.keys import SEARCH_KEY
 from constants.keys import DATE_KEY
 from constants.keys import SEND_TWEETS_KEY
 from constants.keys import STOP_SENDIND_TWEETS_KEY
+from constants.keys import UPLOAD_PHOTO_KEY
 from constants.keys import SETUP_POINTS_KEY
 from constants.keys import SET_POINTS_KEY
 from constants.keys import CHANGE_POINTS_KEY
@@ -49,12 +53,23 @@ from constants.states import ADMIN_STATE
 from constants.states import HOME_STATE
 from constants.states import TWITTER_STATE
 from constants.states import SEARCH_STATE
+from constants.states import UPLOAD_PHOTO_STATE
 from constants.states import SEARCH_DATE_STATE
+from constants.states import GET_SEND_TWEETS_STATE
+from constants.states import STOP_GET_SEND_TWEETS_STATE
+from constants.states import SELECT_GROUPS_STATE
+from constants.states import SELECT_STOP_GROUPS_STATE
+from constants.states import SEND_TWEETS_STATE
+from constants.states import STOP_SEND_TWEETS_STATE
 from constants.states import COMPETITION_STATE
 from constants.states import SETUP_POINTS_STATE
 from constants.states import INSERT_POINT_STATE
 from constants.states import UPDATE_POINT_STATE
 from constants.states import LEADERBOARD_SETTING_STATE
+from constants.states import SELECT_GROUPS_COMPETITION_STATE
+from constants.states import DISPLAY_LEADERBOARD_STATE
+from constants.states import SELECT_HIDE_GROUPS_COMPETITION_STATE
+from constants.states import HIDE_LEADERBOARD_STATE
 from constants.states import TIME_INTERVAL_STATE
 from constants.states import STORE_DISPLAY_BOARD_STATE
 from constants.states import SETUP_PRIZE_STATE
@@ -160,19 +175,35 @@ def base_conversation_handler():
                                admin.search),
                 MessageHandler(
                     filters.Regex(f"^{SEND_TWEETS_KEY}$"),
-                    admin.admin_send_tweets,
+                    admin.get_send_tweet,
                 ),
                 MessageHandler(
                     filters.Regex(f"^{STOP_SENDIND_TWEETS_KEY}$"),
-                    admin.stop_tweets,
+                    admin.stop_get_send_tweet,
+                ),
+                MessageHandler(
+                    filters.Regex(f"^{UPLOAD_PHOTO_KEY}$"),
+                    admin.upload_photo,
                 ),
                 MessageHandler(
                     filters.Regex(f"^{BACK_KEY}$"),
                     admin.back_to_admin,
                 ),
             ],
+            UPLOAD_PHOTO_STATE: [MessageHandler(filters.ALL, admin.store_photo)],
             SEARCH_STATE: [MessageHandler(filters.TEXT, admin.store_search)],
-            SEARCH_DATE_STATE: [MessageHandler(filters.TEXT, admin.store_date)],
+            GET_SEND_TWEETS_STATE: [MessageHandler(filters.TEXT, admin.get_tweets_select_group)],
+            SELECT_GROUPS_STATE: [
+                CallbackQueryHandler(admin.button_callback),
+                MessageHandler(filters.TEXT, admin.get_selected_groups),
+            ],
+            SEND_TWEETS_STATE: [MessageHandler(filters.TEXT, admin.admin_send_tweets)],
+            STOP_GET_SEND_TWEETS_STATE: [MessageHandler(filters.TEXT, admin.stop_get_tweets_select_group)],
+            SELECT_STOP_GROUPS_STATE: [
+                CallbackQueryHandler(admin.button_callback_stop),
+                MessageHandler(filters.TEXT, admin.get_selected_groups_stop),
+            ],
+            STOP_SEND_TWEETS_STATE: [MessageHandler(filters.TEXT, admin.admin_stop_send_tweets)],
             COMPETITION_STATE: [
                 MessageHandler(filters.Regex(f"^{SETUP_POINTS_KEY}$"),
                                admin.setup_points),
@@ -207,12 +238,22 @@ def base_conversation_handler():
                 MessageHandler(filters.Regex(f"^{SET_TIME_LEADERBOARD_KEY}$"),
                                admin.leaderboard_time_settings),
                 MessageHandler(filters.Regex(f"^{DISPLAY_BOARD_KEY}$"),
-                              admin.display_leaderboard),
+                              admin.get_groups_display_leaderboard),
                 MessageHandler(filters.Regex(f"^{HIDE_BOARD_KEY}$"),
-                               admin.hide_leaderboard),
+                               admin.get_groups_hide_leaderboard),
                 MessageHandler(filters.Regex(f"^{BACK_KEY}$"),
                                 admin.back_to_competition),
             ],
+            SELECT_GROUPS_COMPETITION_STATE: [
+                CallbackQueryHandler(admin.button_callback_com),
+                MessageHandler(filters.TEXT, admin.get_selected_groups_com),
+            ],
+            DISPLAY_LEADERBOARD_STATE: [MessageHandler(filters.TEXT, admin.display_leaderboard)],
+            SELECT_HIDE_GROUPS_COMPETITION_STATE: [
+                CallbackQueryHandler(admin.button_callback_hide),
+                MessageHandler(filters.TEXT, admin.get_selected_hide_groups_com),
+            ],
+            HIDE_LEADERBOARD_STATE: [MessageHandler(filters.TEXT, admin.hide_leaderboard)],
             TIME_INTERVAL_STATE: [MessageHandler(filters.TEXT, admin.set_time_interval)],
             STORE_DISPLAY_BOARD_STATE: [MessageHandler(filters.TEXT, admin.store_time_interval)],
             SETUP_PRIZE_STATE: [

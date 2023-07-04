@@ -67,7 +67,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "With your help and the incentives that come with it, we want to increase the visibility and reach of the MILC project.\n"
         "\n"
         "You Can also take part in the competition to get rewarded\n\n"
-        f"Use top on <b>{USER_WALLET_KEY}</b>\n"
+        f"Tap <b>{USER_WALLET_KEY}</b> and follow the instructions\n"
         "follow through with the messages",
         reply_markup=base_keyboard,
         parse_mode=ParseMode.HTML,
