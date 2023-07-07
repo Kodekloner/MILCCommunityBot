@@ -1,8 +1,5 @@
 # main keyboards
 HELP_KEY: str = "Help ❔"
-LOGIN_KEY: str = "Login To Instagram 🔐"
-PRIVACY_KEY: str = "Privacy 🔒"
-LOTTERY_KEY: str = "Lottery 🎲"
 BACK_KEY: str = "Back ◀️"
 
 #user wallets keys
@@ -13,6 +10,8 @@ ADD_ADDRESS_KEY: str = "BSC Address 💲"
 ADD_TWITTER_USER_KEY: str = "Twitter usersname 👨‍💼"
 CHANGE_ADDRESS_KEY: str = "Change Address 💲"
 CHANGE_TWITTER_USER_KEY: str = "Change Twitter username 👨‍💼"
+SELECT_GROUP_KEY: str = "Select Group"
+
 
 # admin panel keys
 ADMIN_KEY: str = "Admin 👨‍💼"

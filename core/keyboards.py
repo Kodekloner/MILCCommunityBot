@@ -8,6 +8,7 @@ from constants.keys import BACK_KEY, FEEDBACK_KEY
 from constants.keys import BACK_TO_HOME_KEY
 from constants.keys import HELP_KEY
 from constants.keys import USER_WALLET_KEY
+from constants.keys import SELECT_GROUP_KEY
 from constants.keys import ADMIN_KEY
 from constants.keys import TWITTER_KEY
 from constants.keys import SEARCH_KEY
@@ -173,6 +174,13 @@ hide_leaderboard_reply_keyboard = [
 hide_leaderboard_keyboard = ReplyKeyboardMarkup(hide_leaderboard_reply_keyboard,
                                             resize_keyboard=True, selective=True)
 
+dis_token_reply_keyboard = [
+    [SEND_TOKEN_KEY],
+    [BACK_KEY],
+]
+dis_token_keyboard = ReplyKeyboardMarkup(dis_token_reply_keyboard,
+                                            resize_keyboard=True, selective=True)
+
 leaderboard_time_settings_reply_keyboard = [
     [SECS_KEY, MINS_KEY],
     [HOURS_KEY, DAYS_KEY],
@@ -202,11 +210,25 @@ add_user_wallet_reply_keyboard = [
 add_user_wallet_keyboard = ReplyKeyboardMarkup(add_user_wallet_reply_keyboard,
                                             resize_keyboard=True, selective=True)
 
+add_user_wallet_group_reply_keyboard = [
+    [ADD_ADDRESS_KEY, ADD_TWITTER_USER_KEY, SELECT_GROUP_KEY],
+    [BACK_TO_HOME_KEY],
+]
+add_user_wallet_group_keyboard = ReplyKeyboardMarkup(add_user_wallet_group_reply_keyboard,
+                                            resize_keyboard=True, selective=True)
+
 view_user_add_addr_reply_keyboard = [
     [ADD_ADDRESS_KEY, SHOW_TWITTER_USER_KEY],
     [BACK_TO_HOME_KEY],
 ]
 view_user_add_addr_keyboard = ReplyKeyboardMarkup(view_user_add_addr_reply_keyboard,
+                                            resize_keyboard=True, selective=True)
+
+view_user_add_addr_group_reply_keyboard = [
+    [ADD_ADDRESS_KEY, SHOW_TWITTER_USER_KEY, SELECT_GROUP_KEY],
+    [BACK_TO_HOME_KEY],
+]
+view_user_add_addr_group_keyboard = ReplyKeyboardMarkup(view_user_add_addr_group_reply_keyboard,
                                             resize_keyboard=True, selective=True)
 
 change_add_reply_keyboard = [
@@ -230,9 +252,23 @@ view_user_wallet_reply_keyboard = [
 view_user_wallet_keyboard = ReplyKeyboardMarkup(view_user_wallet_reply_keyboard,
                                             resize_keyboard=True, selective=True)
 
+view_user_wallet_group_reply_keyboard = [
+    [SHOW_ADDRESS_KEY, SHOW_TWITTER_USER_KEY, SELECT_GROUP_KEY],
+    [BACK_TO_HOME_KEY],
+]
+view_user_wallet_group_keyboard = ReplyKeyboardMarkup(view_user_wallet_group_reply_keyboard,
+                                            resize_keyboard=True, selective=True)
+
 add_user_view_addr_reply_keyboard = [
     [SHOW_ADDRESS_KEY, ADD_TWITTER_USER_KEY],
     [BACK_TO_HOME_KEY],
 ]
 add_user_view_addr_keyboard = ReplyKeyboardMarkup(add_user_view_addr_reply_keyboard,
+                                            resize_keyboard=True, selective=True)
+
+add_user_view_addr_group_reply_keyboard = [
+    [SHOW_ADDRESS_KEY, ADD_TWITTER_USER_KEY, SELECT_GROUP_KEY],
+    [BACK_TO_HOME_KEY],
+]
+add_user_view_addr_group_keyboard = ReplyKeyboardMarkup(add_user_view_addr_group_reply_keyboard,
                                             resize_keyboard=True, selective=True)

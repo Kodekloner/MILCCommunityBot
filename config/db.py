@@ -21,7 +21,7 @@ sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()
 
-# query = f"DROP TABLE IF EXISTS admin_wallet"
+# query = f"DROP TABLE IF EXISTS chat_stats"
 # cursor.execute(query)
 
 # Chat Statistics Table
@@ -34,6 +34,21 @@ cursor.execute(
         user_id INTEGER NOT NULL,
         title TEXT,
         type TEXT
+    )
+    """
+)
+
+# Chat Statistics Table
+cursor.execute(
+    """
+    CREATE TABLE IF NOT EXISTS transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usersame TEXT,
+        address TEXT,
+        total INTEGER,
+        amount FLOAT(8),
+        status TEXT,
+        date DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """
 )
@@ -125,7 +140,7 @@ cursor.execute(
     """
     CREATE TABLE IF NOT EXISTS `prize` (
         `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-        `token` FLOAT
+        `token` FLOAT(8)
     );
     """
 )
@@ -139,6 +154,7 @@ cursor.execute(
         `address` TEXT,
         `chat_id` TEXT,
         `username` TEXT,
+        `telegram_group` TEXT,
         `ban` BOOLEAN
     );
     """
@@ -151,7 +167,7 @@ cursor.execute(
         `address` TEXT,
         `private_key` TEXT,
         `mnemonic` TEXT,
-        `balance` FLOAT
+        `balance` FLOAT(8)
     );
     """
 )

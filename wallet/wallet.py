@@ -9,17 +9,20 @@ class BSC:
         self.w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org'))
 
     def _create_transaction(self, recipient, value):
-        tx = {
-            'from': self.address,
-            'to': recipient,
-            'value': self.w3.to_wei(value, 'ether'),
-            'gas': 21000,
-            'gasPrice': self.w3.to_wei('5', 'gwei'),
-            'nonce': self.w3.eth.get_transaction_count(self.address)
-        }
-        gas_estimate = self.w3.eth.estimate_gas(tx)
-        tx['gas'] = gas_estimate
-        return tx
+        try:
+            tx = {
+                'from': self.address,
+                'to': recipient,
+                'value': self.w3.to_wei(value, 'ether'),
+                'gas': 21000,
+                'gasPrice': self.w3.to_wei('5', 'gwei'),
+                'nonce': self.w3.eth.get_transaction_count(self.address)
+            }
+            gas_estimate = self.w3.eth.estimate_gas(tx)
+            tx['gas'] = gas_estimate
+            return True, tx
+        except ValueError:
+            return False, 'insufficient funds for transfer'
 
     def send_transaction(self, recipient, value):
         try:

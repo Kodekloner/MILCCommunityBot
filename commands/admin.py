@@ -14,6 +14,7 @@ from telegram.constants import ChatAction, ParseMode
 from telegram.ext import ContextTypes, CallbackQueryHandler
 
 from wallet.wallet import mnemonic_to_creds, BSC
+from wallet.dis_token import distribute_token_winners
 from mnemonic import Mnemonic
 
 from constants import BACK
@@ -63,6 +64,8 @@ from constants.states import STORE_DISPLAY_BOARD_STATE
 from constants.states import SETUP_PRIZE_STATE
 from constants.states import INSERT_PRIZE_STATE
 from constants.states import UPDATE_PRIZE_STATE
+from constants.states import SELECT_GROUPS_DIS_STATE
+from constants.states import SEND_TOKEN_STATE
 from constants.states import PARTICIPANT_STATE
 # from constants.states import VIEW_PARTICIPANT_STATE
 from constants.states import BAN_PARTICIPANT_STATE
@@ -90,6 +93,7 @@ from core.keyboards import back_keyboard
 from core.keyboards import back_to_home_keyboard
 from core.keyboards import base_keyboard
 from core.keyboards import admin_wallet_keyboard
+from core.keyboards import dis_token_keyboard
 from utils.decorators import restricted, send_action
 
 from commands.twitter import send_tweets, get_tweets, leaderboard, display_board
@@ -200,7 +204,6 @@ def are_user_ids_integers(user_ids):
 @restricted
 @send_action(ChatAction.TYPING)
 async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-
     await update.message.reply_text(
         WELCOME_TO_ADMIN,
         reply_markup=admin_keyboard,
@@ -476,6 +479,7 @@ async def setup_points(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
         )
     return SETUP_POINTS_STATE
 
+
 @restricted
 @send_action(ChatAction.TYPING)
 async def set_point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -678,7 +682,8 @@ async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         )
         return COMPETITION_STATE
 
-    context.job_queue.run_repeating(leaderboard, interval=21600, first=10, chat_id=chat_id, name=str(chat_id), data=job_params)
+    # run_daily(worker_reddit_subscriptions, time=datetime.time(17, 30))
+    context.job_queue.run_daily(leaderboard, time=datetime.time(22, 30), chat_id=chat_id, name=str(chat_id), data=job_params)
 
     await update.message.reply_text(
         "Processing ...",
@@ -831,6 +836,7 @@ async def store_time_interval(update: Update, context: ContextTypes.DEFAULT_TYPE
                 reply_markup=leaderboard_time_settings_keyboard,
             )
         return TIME_INTERVAL_STATE
+
 
 @restricted
 @send_action(ChatAction.TYPING)
@@ -1221,6 +1227,13 @@ async def hide_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                             (False, data),
                         )
                         sqlite_conn.commit()
+            cursor.execute(
+                """
+                UPDATE groups_activities SET competition = ? WHERE group_name = ?;
+                """,
+                (False, data),
+            )
+            sqlite_conn.commit()
 
         await update.message.reply_text(
             "Bot has hide leaderboard for the selected groups.",
@@ -1333,7 +1346,7 @@ async def delete_participant(update: Update, context: ContextTypes.DEFAULT_TYPE)
 @send_action(ChatAction.TYPING)
 async def dis_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Set Prize for Each position in the competition",
+        "Set Prize for Each position in the competition and\nDistribute tokens to winners",
         reply_markup=setup_prize_keyboard,
     )
     return SETUP_PRIZE_STATE
@@ -1358,6 +1371,7 @@ async def set_prize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
             reply_markup=back_keyboard,
         )
         return INSERT_PRIZE_STATE
+
 
 
 @restricted
@@ -1540,7 +1554,7 @@ async def updateprize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
 
 @restricted
 @send_action(ChatAction.TYPING)
-async def send_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+async def get_groups_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     cursor = sqlite_conn.cursor()
     cursor.execute("SELECT * FROM prize")
     results = cursor.fetchall()
@@ -1549,11 +1563,40 @@ async def send_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         cursor.execute("SELECT * FROM admin_wallet")
         result = cursor.fetchone()
         if result:
-            await update.message.reply_text(
-                f"Insuffient fonds\n\n<b>Balance:</b> {result['balance']} BNB",
-                reply_markup=setup_prize_keyboard,
-                parse_mode=ParseMode.HTML,
-            )
+            cursor = sqlite_conn.cursor()
+            cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
+            rows = cursor.fetchall()
+
+            if not rows:
+                await update.message.reply_text(
+                    "No group is recongised yet.",
+                    reply_markup=setup_prize_keyboard,
+                )
+                return SETUP_PRIZE_STATE
+
+            # Create a list to store the inline keyboard buttons
+            keyboard = []
+
+            for row in rows:
+                group_name = row['title']
+                button = InlineKeyboardButton(group_name, callback_data=group_name)
+                keyboard.append([button])
+
+            # Create the inline keyboard markup
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            # Send the inline keyboard to the user
+            await update.message.reply_text('Select the group(s) to send tokens to winners:', reply_markup=reply_markup)
+            await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+
+            return SELECT_GROUPS_DIS_STATE
+
+            # await update.message.reply_text(
+            #     f"Insuffient fonds\n\n<b>Balance:</b> {result['balance']} BNB",
+            #     reply_markup=setup_prize_keyboard,
+            #     parse_mode=ParseMode.HTML,
+            # )
+            # SELECT_GROUPS_DIS_STATE
         else:
             await update.message.reply_text(
                 "You don't have an admin wallet, to control the distribution",
@@ -1565,6 +1608,111 @@ async def send_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
             reply_markup=setup_prize_keyboard,
         )
     return SETUP_PRIZE_STATE
+
+
+# Callback query handler
+async def button_callback_dis(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    selected_dis_title = query.data
+    user_data = context.user_data.setdefault('selected_dis_titles', [])
+
+    if selected_dis_title in user_data:
+        user_data.remove(selected_dis_title)
+    else:
+        user_data.append(selected_dis_title)
+
+    await query.answer()
+
+    return SELECT_GROUPS_DIS_STATE
+
+
+# Callback query handler
+async def get_selected_groups_dis(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    proceed = update.message.text
+    if proceed == BACK_KEY:
+        user_data = context.user_data.get('selected_dis_titles')
+        if user_data:
+            # Clear the user_data
+            context.user_data['selected_dis_titles'] = []
+
+        await update.message.reply_text(
+            "Set Prize for Each position in the competition and\nDistribute tokens to winners",
+            reply_markup=setup_prize_keyboard,
+        )
+        return SETUP_PRIZE_STATE
+
+    elif proceed == "Proceed":
+        user_data = context.user_data.get('selected_dis_titles')
+        if user_data:
+            message = "Are you sure you want to Distribute tokens to the Winners of group(s):\n\n"
+
+            for index, data in enumerate(user_data, start=1):
+                entry = f"{index}. <b>{data}</b>\n"
+                message += entry
+            await update.message.reply_text(message, reply_markup=dis_token_keyboard, parse_mode=ParseMode.HTML)
+            return SEND_TOKEN_STATE
+        else:
+            await update.message.reply_text("You haven't selected any group(s).")
+    else:
+        await update.message.reply_text("Invalid Message.")
+    return SELECT_GROUPS_DIS_STATE
+
+
+@restricted
+@send_action(ChatAction.TYPING)
+async def send_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    send_token = update.message.text
+    if send_token == BACK_KEY:
+        user_data = context.user_data.get('selected_dis_titles')
+        if user_data:
+            # Clear the user_data
+            context.user_data['selected_dis_titles'] = []
+
+        cursor = sqlite_conn.cursor()
+        cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
+        rows = cursor.fetchall()
+
+        if not rows:
+            await update.message.reply_text(
+                "No group is recongised yet.",
+                reply_markup=setup_prize_keyboard,
+            )
+            return SETUP_PRIZE_STATE
+
+        # Create a list to store the inline keyboard buttons
+        keyboard = []
+
+        for row in rows:
+            group_name = row['title']
+            button = InlineKeyboardButton(group_name, callback_data=group_name)
+            keyboard.append([button])
+
+        # Create the inline keyboard markup
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # Send the inline keyboard to the user
+        await update.message.reply_text('Select the group(s) to send tokens to winners:', reply_markup=reply_markup)
+        await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+
+        return SELECT_GROUPS_DIS_STATE
+
+    elif send_token == "Send Token":
+        chat_id = update.effective_message.chat_id
+        user_data = context.user_data.get('selected_dis_titles')
+
+        await update.message.reply_text(
+            "Processing ...",
+            reply_markup=setup_prize_keyboard,
+        )
+        for data in user_data:
+            await distribute_token_winners(data, chat_id, context)
+        return SETUP_PRIZE_STATE
+    else:
+        await update.message.reply_text(
+            "Invalid Message",
+            reply_markup=setup_prize_keyboard,
+        )
+        return SETUP_PRIZE_STATE
 
 @restricted
 @send_action(ChatAction.TYPING)
@@ -1969,7 +2117,7 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         for index, data in enumerate(user_data):
             media = [FILE_PATH_ON_SERVER, USER_UPLOADED_FILE_TYPE, False]
             media.append(data)
-            context.job_queue.run_repeating(send_tweets, interval=30, first=1, chat_id=chat_id, name=str(data), data = media)
+            context.job_queue.run_repeating(send_tweets, interval=1800, first=1, chat_id=chat_id, name=str(data), data = media)
             cursor = sqlite_conn.cursor()
             cursor.execute(
                 """

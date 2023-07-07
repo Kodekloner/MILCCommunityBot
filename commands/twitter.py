@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from typing import Dict
 from requests_oauthlib import OAuth1
 
+from logging import getLogger
 
 from telegram import Update
 from telegram.constants import ParseMode
@@ -23,6 +24,8 @@ from utils.decorators import description, example, triggers, usage
 
 from config.options import config
 
+# Init logger
+logger = getLogger(__name__)
 
 
 bearer_token = config["API"]["TWITTER_BEARER_TOKEN"]
@@ -40,6 +43,36 @@ def generate_oauth1_header():
         access_token_secret
     )
     return oauth1_auth
+
+
+def make_api_request_with_backoff(endpoint, headers, params=None):
+    # retries = 0
+    delay_seconds = 1  # Initial delay of 1 second
+    # max_retries = 10  # Maximum number of retries
+
+    while True:
+        if params == None:
+            response = requests.get(endpoint, headers=headers)
+        else:
+            response = requests.get(endpoint, params=params, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+            break  # Exit the while loop if the response is successful
+        elif response.status_code == 429:  # Rate limit exceeded
+            # Increase the delay exponentially
+            delay_seconds *= 2
+            sleep(delay_seconds)
+        else:
+            print(response.status_code)
+            print(response.text)
+            return None
+            break
+
+    # If the maximum number of retries is reached
+    print("Maximum number of retries reached.")
+    return None
+
 
 async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Get tweet """
@@ -205,33 +238,24 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                 # users that retweeted
                 retweeted_endpoint = f'https://api.twitter.com/2/tweets/{tweet_id}/retweeted_by'
-                sleep(14.5)
-                retweeted_response = requests.get(retweeted_endpoint, headers=headers)
+                retweeted_response = make_api_request_with_backoff(retweeted_endpoint, headers=headers)
 
-                if retweeted_response.status_code == 200:
-                    response_data = retweeted_response.json()
-
-                    print(json.dumps(retweeted_response.json(), indent=2, sort_keys = True))
-
-                    if "data" in response_data:
-                        for usernames in response_data["data"]:
+                if retweeted_response is not None:
+                    print(json.dumps(retweeted_response, indent=2, sort_keys = True))
+                    if "data" in retweeted_response:
+                        for usernames in retweeted_response["data"]:
                             username = usernames["username"]
                             retweeted_username_counts[username] = retweeted_username_counts.get(username, 0) + 1
 
 
                 #users that liked
                 liking_endpoint = f'https://api.twitter.com/2/tweets/{tweet_id}/liking_users'
+                liking_response = make_api_request_with_backoff(liking_endpoint, headers=headers)
 
-                sleep(14.5)
-                liking_response = requests.get(liking_endpoint, headers=headers)
-
-                if liking_response.status_code == 200:
-                    response_data = liking_response.json()
-
-                    print(json.dumps(liking_response.json(), indent=2, sort_keys = True))
-
-                    if "data" in response_data:
-                        for usernames in response_data["data"]:
+                if liking_response is not None:
+                    print(json.dumps(liking_response, indent=2, sort_keys = True))
+                    if "data" in liking_response:
+                        for usernames in liking_response["data"]:
                             username = usernames["username"]
                             liking_username_counts[username] = liking_username_counts.get(username, 0) + 1
 
@@ -247,46 +271,36 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                     'expansions': 'author_id'
                 }
 
-                sleep(2.4)
-                response = requests.get(replies_endpoint, params=params, headers=headers)
+                # sleep(2.4)
+                response = make_api_request_with_backoff(replies_endpoint, params=params, headers=headers)
 
-                if response.status_code == 200:
-                    response_data = response.json()
+                if response is not None:
+                    print(json.dumps(response, indent=2, sort_keys = True))
 
-                    print(json.dumps(response.json(), indent=2, sort_keys = True))
-
-                    if "data" in response_data:
-                        for tweet in response_data["data"]:
-
+                    if "data" in response:
+                        for tweet in response["data"]:
                             if tweet["author_id"]:
                                 author_id = tweet["author_id"]
-                                for users in response_data["includes"]["users"]:
+                                for users in response["includes"]["users"]:
                                     if users["id"] == author_id:
                                         username = users["username"]
                                         repling_username_counts[username] = repling_username_counts.get(username, 0) + 1
-                else:
-                    print(response.status_code)
-                    print(response.text)
 
 
                 # users that quoted a tweet
                 quote_endpoint = f'https://api.twitter.com/2/tweets/{tweet_id}/quote_tweets'
                 params = {
-                    'query': query,
                     'max_results': '100',
                     'tweet.fields': 'author_id',
                     'expansions': 'author_id'
                 }
-                sleep(14.5)
-                quote_response = requests.get(quote_endpoint, params=params, headers=headers)
+                quote_response = make_api_request_with_backoff(quote_endpoint, params=params, headers=headers)
 
-                if quote_response.status_code == 200:
-                    response_data = quote_response.json()
+                if quote_response is not None:
+                    print(json.dumps(quote_response, indent=2, sort_keys = True))
 
-                    print(json.dumps(quote_response.json(), indent=2, sort_keys = True))
-
-                    if "data" in response_data:
-                        for usernames in response_data["data"]:
+                    if "data" in quote_response:
+                        for usernames in quote_response["data"]:
                             username = usernames["username"]
                             quote_username_counts[username] = quote_username_counts.get(username, 0) + 1
 
@@ -429,12 +443,12 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
             # await context.bot.send_photo(result['chat_id'], photo=image_url, caption=tweet_text)
             await context.bot.send_animation(result['chat_id'], animation=job.data[0], caption=message, parse_mode=ParseMode.HTML,)
 
-
 async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
     job_queue = context.job_queue
     job = context.job
     cursor = sqlite_conn.cursor()
 
+    print(job.data[2])
     # Fetch the distinct group_id and channel_id values
     cursor.execute("SELECT DISTINCT chat_id FROM chat_stats WHERE type LIKE '%group%' AND title = ?;", (job.data[2],),)
     distinct_id = cursor.fetchone()
@@ -442,25 +456,48 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
     if distinct_id:
         group_chat_id = distinct_id["chat_id"]
 
-        cursor.execute(
-            """
-            SELECT user_wallet_twitter.username, user_wallet_twitter.chat_id, leaderboard.id, leaderboard.tweets, leaderboard.replies, leaderboard.likes, leaderboard.retweets, leaderboard.quotes, leaderboard.total
-            FROM leaderboard
-            JOIN user_wallet_twitter ON leaderboard.username = user_wallet_twitter.twitter_username
-            WHERE user_wallet_twitter.ban = ? AND user_wallet_twitter.chat_id = ?
-            ORDER BY leaderboard.total DESC
-            """,
-            (False, group_chat_id),
-        )
-        rows = cursor.fetchall()
+        cursor.execute("SELECT * FROM user_wallet_twitter WHERE telegram_group = ?;", (job.data[2],),)
+        participates = cursor.fetchall()
 
-        if not rows:
-            if not job.data[0]:
-                await context.bot.send_message(job.chat_id,
-                    "❌You don't have Participant yet for the Competition",
-                )
-                job.data[0] = True
-                return
+        if not participates:
+            await context.bot.send_message(job.chat_id,
+                "❌You don't have Participant yet for the Selected group",
+            )
+            job.data[0] = True
+            return
+
+        leaderboard = {}
+        for participate in participates:
+            p_user = participate['username']
+            p_tuser = participate['twitter_username']
+            print(p_tuser)
+            cursor.execute(
+                """
+                SELECT user_wallet_twitter.username, user_wallet_twitter.twitter_username, user_wallet_twitter.chat_id, leaderboard.id, leaderboard.tweets, leaderboard.replies, leaderboard.likes, leaderboard.retweets, leaderboard.quotes, leaderboard.total
+                FROM leaderboard
+                JOIN user_wallet_twitter ON leaderboard.username = user_wallet_twitter.twitter_username
+                WHERE user_wallet_twitter.ban = ? AND user_wallet_twitter.telegram_group = ?
+                ORDER BY leaderboard.total DESC
+                """,
+                (False, job.data[2]),
+            )
+            rows = cursor.fetchall()
+
+            if rows:
+                for row in rows:
+                    b_name = row['twitter_username']
+                    if p_tuser == b_name:
+                        leaderboard[p_user] = row["total"]
+                        break
+                    else:
+                        leaderboard[p_user] = 0
+            else:
+                leaderboard[p_user] = 0
+
+        print(leaderboard)
+
+        # Rearrange the leaderboard dictionary based on values in descending order
+        leaderboard = dict(sorted(leaderboard.items(), key=lambda x: x[1], reverse=True))
 
         if not job.data[1]:
             await context.bot.send_message(job.chat_id,
@@ -470,10 +507,8 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
         # Prepare the leaderboard message
         message = "<b>Leaderboard:</b>\n\n"
 
-        for index, row in enumerate(rows, start=1):
-            username = row["username"]
-            total = row["total"]
-            entry = f"{index}. <b>{username}</b>: {total}\n"
+        for i, (username, score) in enumerate(leaderboard.items(), start=1):
+            entry = f"{i}. <b>{username}</b>: {score}\n"
             message += entry
 
         # Add emojis and formatting

@@ -123,7 +123,7 @@ config = {
         "TOKEN": os.environ.get("TELEGRAM_TOKEN", os.getenv("TELEGRAM_TOKEN")),
         "UPDATER": os.environ.get("UPDATER", os.getenv("UPDATER")),
         "WEBHOOK_URL": f"""{os.environ.get("WEBHOOK_URL", os.getenv("WEBHOOK_URL"))}/{os.environ.get("TELEGRAM_TOKEN", os.getenv("TELEGRAM_TOKEN"))}""",
-        "LOGGING_CHANNEL_ID": int(os.environ.get("LOGGING_CHANNEL_ID"))
+        "LOGGING_CHANNEL_ID": int(os.environ.get("LOGGING_CHANNEL_ID", os.getenv("LOGGING_CHANNEL_ID")))
         if os.environ.get("LOGGING_CHANNEL_ID")
         else None,
         "QUOTE_CHANNEL_ID": int(os.environ.get("QUOTE_CHANNEL_ID"))

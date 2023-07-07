@@ -116,6 +116,13 @@ WELCOME_MESSAGE: str = (
     "\n"
     "\n"
     "Let's go to the moon together! 🚀🌕")
+
+WELCOME_MESSAGE_BACK: str = (
+    "Hello {first_name}, welcome back to MILC Community Bot.\n"
+    "\n"
+    "Let's go to the moon together! 🚀🌕")
+
+
 SEND_ME_THE_MEDIA_YOU_WANT_TO_UPLOAD_ON_INSTAGRAM: str = (
     "Send me the media you want to upload on Instagram")
 SEND_ME_THE_CAPTION_OF_POST_YOU_WANT_TO_UPLOAD_ON_INSTAGRAM: str = (

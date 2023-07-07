@@ -1,12 +1,13 @@
 from datetime import datetime
 
-from telegram import Message, Update
+from telegram import Message, Update, Chat
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 import commands
 import utils.string
 from config.db import sqlite_conn
+from logging import getLogger
 # from utils import readable_time
 # from utils.decorators import description, example, triggers, usage
 
@@ -22,7 +23,10 @@ telegram_db = client.telegram_bot
 user = telegram_db.users
 
 
-async def increment(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+# Init logger
+logger = getLogger(__name__)
+
+async def increment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Increment message count for a user. Also store last seen time in Redis.
     """

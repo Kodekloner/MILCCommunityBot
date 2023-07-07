@@ -5,21 +5,26 @@ import os
 import traceback
 
 from pymongo import MongoClient
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
-from telegram import Update
+from telegram import Chat, ChatMember, ChatMemberUpdated, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
     AIORateLimiter,
     Application,
     ApplicationBuilder,
+    ChatMemberHandler,
+    CommandHandler,
     ContextTypes,
+    MessageHandler,
+    filters,
     PicklePersistence,
 )
 
 import commands
 from config.logger import logger
 from config.options import config
+from config.db import sqlite_conn
 from core.handlers import base_conversation_handler
 
 password = config["TELEGRAM"]["MONGODB_PWD"]
@@ -84,6 +89,125 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
             parse_mode=ParseMode.HTML,
         )
 
+
+def extract_status_change(chat_member_update: ChatMemberUpdated) -> Optional[Tuple[bool, bool]]:
+    """Takes a ChatMemberUpdated instance and extracts whether the 'old_chat_member' was a member
+    of the chat and whether the 'new_chat_member' is a member of the chat. Returns None, if
+    the status didn't change.
+    """
+    status_change = chat_member_update.difference().get("status")
+    old_is_member, new_is_member = chat_member_update.difference().get("is_member", (None, None))
+
+    if status_change is None:
+        return None
+
+    old_status, new_status = status_change
+    was_member = old_status in [
+        ChatMember.MEMBER,
+        ChatMember.OWNER,
+        ChatMember.ADMINISTRATOR,
+    ] or (old_status == ChatMember.RESTRICTED and old_is_member is True)
+    is_member = new_status in [
+        ChatMember.MEMBER,
+        ChatMember.OWNER,
+        ChatMember.ADMINISTRATOR,
+    ] or (new_status == ChatMember.RESTRICTED and new_is_member is True)
+
+    return was_member, is_member
+
+# tracks when the bot is added or removed, blocked or unblocked
+async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Tracks the chats the bot is in."""
+    cursor = sqlite_conn.cursor()
+
+    result = extract_status_change(update.my_chat_member)
+    print(result)
+    if result is None:
+        return
+    was_member, is_member = result
+
+    # Let's check who is responsible for the change
+    cause_name = update.effective_user.full_name
+    cause_name_id = update.effective_user.id
+    # Handle chat types differently:
+    chat = update.effective_chat
+    if chat.type == Chat.PRIVATE:
+        if not was_member and is_member:
+            # This may not be really needed in practice because most clients will automatically
+            # send a /start command after the user unblocks the bot, and start_private_chat()
+            # will add the user to "user_ids".
+            # We're including this here for the sake of the example.
+            logger.info("%s unblocked the bot", cause_name)
+            context.bot_data.setdefault("user_ids", set()).add(chat.id)
+        elif was_member and not is_member:
+            logger.info("%s blocked the bot", cause_name)
+            context.bot_data.setdefault("user_ids", set()).discard(chat.id)
+    elif chat.type in [Chat.GROUP, Chat.SUPERGROUP]:
+        if not was_member and is_member:
+            logger.info("%s added the bot to the group %s", cause_name, chat.title)
+            context.bot_data.setdefault("group_ids", set()).add(chat.id)
+            cursor.execute(
+                f"INSERT INTO chat_stats (chat_id, user_id, title, type) VALUES (?, ?, ?, ?)",
+                (chat.id, cause_name_id, chat.title, chat.type),
+            )
+            sqlite_conn.commit()
+        elif was_member and not is_member:
+            logger.info("%s removed the bot from the group %s", cause_name, chat.title)
+            context.bot_data.setdefault("group_ids", set()).discard(chat.id)
+            cursor.execute("DELETE FROM chat_stats WHERE chat_id = ?;", (chat.id,),)
+            cursor.execute("DELETE FROM groups_activities WHERE group_name = ?;", (chat.title,),)
+            sqlite_conn.commit()
+    elif not was_member and is_member:
+        logger.info("%s added the bot to the channel %s", cause_name, chat.title)
+        context.bot_data.setdefault("channel_ids", set()).add(chat.id)
+        cursor.execute(
+            f"INSERT INTO chat_stats (chat_id, user_id, title, type) VALUES (?, ?, ?, ?)",
+            (chat.id, cause_name_id, chat.title, chat.type),
+        )
+        sqlite_conn.commit()
+    elif was_member and not is_member:
+        logger.info("%s removed the bot from the channel %s", cause_name, chat.title)
+        context.bot_data.setdefault("channel_ids", set()).discard(chat.id)
+        cursor.execute("DELETE FROM chat_stats WHERE chat_id = ?;", (chat.id,),)
+        cursor.execute("DELETE FROM groups_activities WHERE group_name = ?;", (chat.title,),)
+        sqlite_conn.commit()
+
+
+async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Greets new users in chats and announces when someone leaves"""
+    result = extract_status_change(update.chat_member)
+    if result is None:
+        return
+
+    cursor = sqlite_conn.cursor()
+    was_member, is_member = result
+    cause_name = update.chat_member.from_user.mention_html()
+    member_name = update.chat_member.new_chat_member.user.mention_html()
+    chat = update.chat_member.chat
+    member = update.chat_member.new_chat_member.user
+
+    if not was_member and is_member:
+        cursor.execute("SELECT * FROM user_wallet_twitter")
+        rows = cursor.fetchall()
+        if rows:
+            for row in rows:
+                if int(row['userid']) == int(member.id):
+                    cursor.execute("UPDATE user_wallet_twitter SET chat_id = ?, telegram_group = ? WHERE userid = ?", (chat.id, chat.title, member.id))
+                    sqlite_conn.commit()
+        await update.effective_chat.send_message(
+            f"{member_name} was added by {cause_name}. Welcome!",
+            parse_mode=ParseMode.HTML,
+        )
+
+    elif was_member and not is_member:
+        cursor.execute("DELETE FROM user_wallet_twitter WHERE userid = ?;", (member.id,),)
+        sqlite_conn.commit()
+        await update.effective_chat.send_message(
+            f"{member_name} is no longer with us. Thanks a lot, {cause_name} ...",
+            parse_mode=ParseMode.HTML,
+        )
+
+
 def main():
     persistence = PicklePersistence(filepath="conversation_states")
     application = (
@@ -98,6 +222,12 @@ def main():
 
     application.add_error_handler(error_handler)
 
+    # Keep track of which chats the bot is in
+    application.add_handler(ChatMemberHandler(track_chats, ChatMemberHandler.MY_CHAT_MEMBER))
+
+    # Handle members joining/leaving chats.
+    application.add_handler(ChatMemberHandler(greet_chat_members, ChatMemberHandler.CHAT_MEMBER))
+
     application.add_handler(base_conversation_handler())
 
     if "UPDATER" in config["TELEGRAM"] and config["TELEGRAM"]["UPDATER"] == "webhook":
@@ -110,7 +240,8 @@ def main():
         )
     else:
         logger.info("Using polling...")
-        application.run_polling(drop_pending_updates=True)
+        # application.run_polling(drop_pending_updates=True)
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
