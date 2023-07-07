@@ -230,18 +230,18 @@ def main():
 
     application.add_handler(base_conversation_handler())
 
-    # if "UPDATER" in config["TELEGRAM"] and config["TELEGRAM"]["UPDATER"] == "webhook":
-    #     logger.info(f"Using webhook URL: {config['TELEGRAM']['WEBHOOK_URL']}")
-    #     application.run_webhook(
-    #         listen="0.0.0.0",
-    #         port=int(os.environ.get("PORT", "443")),
-    #         url_path=config["TELEGRAM"]["TOKEN"],
-    #         webhook_url=config["TELEGRAM"]["WEBHOOK_URL"],
-    #     )
-    # else:
-    logger.info("Using polling...")
-    # application.run_polling(drop_pending_updates=True)
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    if "UPDATER" in config["TELEGRAM"] and config["TELEGRAM"]["UPDATER"] == "webhook":
+        logger.info(f"Using webhook URL: {config['TELEGRAM']['WEBHOOK_URL']}")
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=int(os.environ.get("PORT", "443")),
+            url_path=config["TELEGRAM"]["TOKEN"],
+            webhook_url=config["TELEGRAM"]["WEBHOOK_URL"],
+        )
+    else:
+        logger.info("Using polling...")
+        # application.run_polling(drop_pending_updates=True)
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
