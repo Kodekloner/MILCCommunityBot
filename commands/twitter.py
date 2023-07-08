@@ -61,7 +61,7 @@ def make_api_request_with_backoff(endpoint, headers, params=None):
             break  # Exit the while loop if the response is successful
         elif response.status_code == 429:  # Rate limit exceeded
             # Increase the delay exponentially
-            delay_seconds++
+            delay_seconds += 2
             sleep(delay_seconds)
         else:
             print(response.status_code)
