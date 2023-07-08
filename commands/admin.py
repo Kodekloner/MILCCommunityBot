@@ -659,7 +659,7 @@ async def updatepoint(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
 @restricted
 @send_action(ChatAction.TYPING)
 async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, time
 
     chat_id = update.effective_message.chat_id
     # Get the current timestamp
@@ -683,10 +683,10 @@ async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         return COMPETITION_STATE
 
     # run_daily(worker_reddit_subscriptions, time=datetime.time(17, 30))
-    context.job_queue.run_daily(leaderboard, time=datetime.time(22, 30), chat_id=chat_id, name=str(chat_id), data=job_params)
+    context.job_queue.run_daily(leaderboard, time=time(22, 30), chat_id=chat_id, name=str(chat_id), data=job_params)
 
     await update.message.reply_text(
-        "Processing ...",
+        "Processing ...\n\nYou will recieve a message in the night at about 11:00pm if it was successful or not.",
         reply_markup=competition_keyboard,
     )
     return COMPETITION_STATE

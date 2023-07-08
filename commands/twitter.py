@@ -61,7 +61,7 @@ def make_api_request_with_backoff(endpoint, headers, params=None):
             break  # Exit the while loop if the response is successful
         elif response.status_code == 429:  # Rate limit exceeded
             # Increase the delay exponentially
-            delay_seconds *= 2
+            delay_seconds++
             sleep(delay_seconds)
         else:
             print(response.status_code)
@@ -308,15 +308,15 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                 username = result['username']
                 tweets_username_counts[username] = tweets_username_counts.get(username, 0) + 1
 
-        print(tweets_username_counts)
-        print("_______________________")
-        print(liking_username_counts)
-        print("_______________________")
-        print(retweeted_username_counts)
-        print("_______________________")
-        print(repling_username_counts)
-        print("_______________________")
-        print(quote_username_counts)
+        # print(tweets_username_counts)
+        # print("_______________________")
+        # print(liking_username_counts)
+        # print("_______________________")
+        # print(retweeted_username_counts)
+        # print("_______________________")
+        # print(repling_username_counts)
+        # print("_______________________")
+        # print(quote_username_counts)
 
         # Loop through tweet_username dictionary
         for username, count in tweets_username_counts.items():
