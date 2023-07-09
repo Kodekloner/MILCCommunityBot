@@ -155,7 +155,6 @@ async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             logger.info("%s removed the bot from the group %s", cause_name, chat.title)
             context.bot_data.setdefault("group_ids", set()).discard(chat.id)
             cursor.execute("DELETE FROM chat_stats WHERE chat_id = ?;", (chat.id,),)
-            cursor.execute("DELETE FROM groups_activities WHERE group_name = ?;", (chat.title,),)
             sqlite_conn.commit()
     elif not was_member and is_member:
         logger.info("%s added the bot to the channel %s", cause_name, chat.title)
@@ -169,7 +168,6 @@ async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         logger.info("%s removed the bot from the channel %s", cause_name, chat.title)
         context.bot_data.setdefault("channel_ids", set()).discard(chat.id)
         cursor.execute("DELETE FROM chat_stats WHERE chat_id = ?;", (chat.id,),)
-        cursor.execute("DELETE FROM groups_activities WHERE group_name = ?;", (chat.title,),)
         sqlite_conn.commit()
 
 

@@ -21,8 +21,8 @@ sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()
 
-# query = f"DROP TABLE IF EXISTS chat_stats"
-# cursor.execute(query)
+query = f"DROP TABLE IF EXISTS groups_activities"
+cursor.execute(query)
 
 # Chat Statistics Table
 cursor.execute(
@@ -99,17 +99,6 @@ cursor.execute(
         `retweets` INTEGER,
         `quotes` INTEGER,
         `total` INTEGER
-    );
-    """
-)
-
-cursor.execute(
-    """
-    CREATE TABLE IF NOT EXISTS `groups_activities` (
-        `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-        `group_name` TEXT,
-        `send_tweets` BOOLEAN,
-        `competition` BOOLEAN
     );
     """
 )

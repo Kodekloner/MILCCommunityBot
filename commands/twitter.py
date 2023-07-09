@@ -61,7 +61,9 @@ def make_api_request_with_backoff(endpoint, headers, params=None):
             break  # Exit the while loop if the response is successful
         elif response.status_code == 429:  # Rate limit exceeded
             # Increase the delay exponentially
-            delay_seconds += 2
+            print(response.status_code)
+            print(response.text)
+            delay_seconds *= 2
             sleep(delay_seconds)
         else:
             print(response.status_code)
@@ -301,8 +303,9 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                     if "data" in quote_response:
                         for usernames in quote_response["data"]:
-                            username = usernames["username"]
-                            quote_username_counts[username] = quote_username_counts.get(username, 0) + 1
+                            if "username" in  usernames:
+                                quote_username = usernames["username"]
+                                quote_username_counts[quote_username] = quote_username_counts.get(quote_username, 0) + 1
 
 
                 username = result['username']
@@ -384,8 +387,7 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     else:
         await context.bot.send_message(job.chat_id,
-            "<b>❌ No tweets yet base on the keywords for the competition\n</b>"
-            "Will check in the next 20mins",
+            "<b>❌ No tweets yet base on the keywords for the competition\n</b>",
             parse_mode=ParseMode.HTML,
         )
 

@@ -683,7 +683,8 @@ async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         return COMPETITION_STATE
 
     # run_daily(worker_reddit_subscriptions, time=datetime.time(17, 30))
-    context.job_queue.run_daily(leaderboard, time=time(22, 30), chat_id=chat_id, name=str(chat_id), data=job_params)
+    context.job_queue.run_repeating(leaderboard, interval=600, first=1, chat_id=chat_id, name=str(chat_id), data=job_params)
+    # context.job_queue.run_daily(leaderboard, time=time(22, 30), chat_id=chat_id, name=str(chat_id), data=job_params)
 
     await update.message.reply_text(
         "Processing ...\n\nYou will recieve a message in the night at about 11:00pm if it was successful or not.",
@@ -841,37 +842,15 @@ async def store_time_interval(update: Update, context: ContextTypes.DEFAULT_TYPE
 @restricted
 @send_action(ChatAction.TYPING)
 async def get_groups_display_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    chat_id = update.effective_message.chat_id
+    job_queue = context.job_queue
     cursor = sqlite_conn.cursor()
     cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
     rows = cursor.fetchall()
 
-    for row in rows:
-        group_name = row['title']
-
-        # Check if the title exists in the group_activities table
-        cursor.execute("SELECT * FROM groups_activities WHERE group_name = ?;", (group_name,))
-        result = cursor.fetchone()
-
-        if not result:
-            # If the title is not found, insert it into the group_activities table
-            cursor.execute(
-                """
-                INSERT INTO groups_activities (group_name, send_tweets, competition) VALUES (?,?,?);
-                """,
-                (group_name,False,False),
-            )
-            sqlite_conn.commit()
-
-    cursor.execute("""
-        SELECT * FROM groups_activities WHERE competition = ?;
-        """,
-        (False,),
-    )
-    rows = cursor.fetchall()
-
     if not rows:
         await update.message.reply_text(
-            "Bot is already Displaying Leaderboard to all group(s).",
+            "No group has been recognised yet.",
             reply_markup=leaderboard_setting_keyboard,
         )
         return LEADERBOARD_SETTING_STATE
@@ -881,8 +860,18 @@ async def get_groups_display_leaderboard(update: Update, context: ContextTypes.D
 
     # Iterate through the titles and create a button for each
     for row in rows:
-        button = InlineKeyboardButton(row['group_name'], callback_data=row['group_name'])
-        keyboard.append([button])
+        group_name = row['title']
+        if not any(job.name == group_name and job.callback == display_board for job in job_queue.jobs()):
+            button = InlineKeyboardButton(group_name, callback_data=group_name)
+            keyboard.append([button])
+
+
+    if keyboard == []:
+        await update.message.reply_text(
+            "Bot is already displaying leaderboard to all group(s).",
+            reply_markup=leaderboard_setting_keyboard,
+        )
+        return LEADERBOARD_SETTING_STATE
 
     # Create the inline keyboard markup
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -946,43 +935,21 @@ async def get_selected_groups_com(update: Update, context: ContextTypes.DEFAULT_
 @send_action(ChatAction.TYPING)
 async def display_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     display = update.message.text
+    chat_id = update.effective_message.chat_id
+    job_queue = context.job_queue
+    user_data = context.user_data.get('selected_com_titles')
+    cursor = sqlite_conn.cursor()
+
     if display == BACK_KEY:
-        user_data = context.user_data.get('selected_com_titles')
         if user_data:
-            # Clear the user_data
             context.user_data['selected_com_titles'] = []
 
-        cursor = sqlite_conn.cursor()
         cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
-        rows = cursor.fetchall()
-
-        for row in rows:
-            group_name = row['title']
-
-            # Check if the title exists in the group_activities table
-            cursor.execute("SELECT * FROM groups_activities WHERE group_name = ?;", (group_name,))
-            result = cursor.fetchone()
-
-            if not result:
-                # If the title is not found, insert it into the group_activities table
-                cursor.execute(
-                    """
-                    INSERT INTO groups_activities (group_name, send_tweets, competition) VALUES (?,?,?);
-                    """,
-                    (group_name,False,False),
-                )
-                sqlite_conn.commit()
-
-        cursor.execute("""
-            SELECT * FROM groups_activities WHERE competition = ?;
-            """,
-            (False,),
-        )
         rows = cursor.fetchall()
 
         if not rows:
             await update.message.reply_text(
-                "Bot is already Displaying Leaderboard to all group(s).",
+                "No group has been recognised yet.",
                 reply_markup=leaderboard_setting_keyboard,
             )
             return LEADERBOARD_SETTING_STATE
@@ -992,8 +959,18 @@ async def display_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         # Iterate through the titles and create a button for each
         for row in rows:
-            button = InlineKeyboardButton(row['group_name'], callback_data=row['group_name'])
-            keyboard.append([button])
+            group_name = row['title']
+            if not any(job.name == group_name and job.callback == display_board for job in job_queue.jobs()):
+                button = InlineKeyboardButton(group_name, callback_data=group_name)
+                keyboard.append([button])
+
+
+        if keyboard == []:
+            await update.message.reply_text(
+                "Bot is already displaying leaderboard to all group(s).",
+                reply_markup=leaderboard_setting_keyboard,
+            )
+            return LEADERBOARD_SETTING_STATE
 
         # Create the inline keyboard markup
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1005,14 +982,9 @@ async def display_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE
         return SELECT_GROUPS_COMPETITION_STATE
 
     elif display == "Display":
-        cursor = sqlite_conn.cursor()
         cursor.execute("SELECT * FROM leaderboard_time_intervals")
         result = cursor.fetchone()
         if result:
-            chat_id = update.effective_message.chat_id
-
-            job_queue = context.job_queue
-
             time_interval_message = result["time_intervals"]
 
             # Split the interval string into unit and value
@@ -1037,20 +1009,10 @@ async def display_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE
             if interval_unit in conversion_factors:
                 seconds = interval_value * conversion_factors[interval_unit]
 
-            user_data = context.user_data.get('selected_com_titles')
-
             for index, data in enumerate(user_data):
                 groups = [False, False]
                 groups.append(data)
                 context.job_queue.run_repeating(display_board, interval=seconds, first=1, chat_id=chat_id, name=str(data), data=groups)
-                cursor = sqlite_conn.cursor()
-                cursor.execute(
-                    """
-                    UPDATE groups_activities SET competition = ? WHERE group_name = ?;
-                    """,
-                    (True, data),
-                )
-                sqlite_conn.commit()
 
             await update.message.reply_text(
                 "Processing ...",
@@ -1066,37 +1028,16 @@ async def display_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE
 @restricted
 @send_action(ChatAction.TYPING)
 async def get_groups_hide_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    chat_id = update.effective_message.chat_id
+    job_queue = context.job_queue
     cursor = sqlite_conn.cursor()
+
     cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
-    rows = cursor.fetchall()
-
-    for row in rows:
-        group_name = row['title']
-
-        # Check if the title exists in the group_activities table
-        cursor.execute("SELECT * FROM groups_activities WHERE group_name = ?;", (group_name,))
-        result = cursor.fetchone()
-
-        if not result:
-            # If the title is not found, insert it into the group_activities table
-            cursor.execute(
-                """
-                INSERT INTO groups_activities (group_name, send_tweets, competition) VALUES (?,?,?);
-                """,
-                (group_name,False,False),
-            )
-            sqlite_conn.commit()
-
-    cursor.execute("""
-        SELECT * FROM groups_activities WHERE competition = ?;
-        """,
-        (True,),
-    )
     rows = cursor.fetchall()
 
     if not rows:
         await update.message.reply_text(
-            "The Competition leaderboard is not been displayed in any group(s)\n\nSet time interval if you have not\n\nDisplay Leaderboard then hide it any time you want to.",
+            "No group have been recognised yet.",
             reply_markup=leaderboard_setting_keyboard,
         )
         return LEADERBOARD_SETTING_STATE
@@ -1106,8 +1047,17 @@ async def get_groups_hide_leaderboard(update: Update, context: ContextTypes.DEFA
 
     # Iterate through the titles and create a button for each
     for row in rows:
-        button = InlineKeyboardButton(row['group_name'], callback_data=row['group_name'])
-        keyboard.append([button])
+        group_name = row['title']
+        if any(job.name == group_name and job.callback == display_board for job in job_queue.jobs()):
+            button = InlineKeyboardButton(group_name, callback_data=group_name)
+            keyboard.append([button])
+
+    if keyboard == []:
+        await update.message.reply_text(
+            "The Competition leaderboard is not been displayed in any group(s)\n\nSet time interval if you have not\n\nDisplay Leaderboard then hide it any time you want to.",
+            reply_markup=leaderboard_setting_keyboard,
+        )
+        return LEADERBOARD_SETTING_STATE
 
     # Create the inline keyboard markup
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1138,6 +1088,8 @@ async def button_callback_hide(update: Update, context: ContextTypes.DEFAULT_TYP
 # Callback query handler
 async def get_selected_hide_groups_com(update: Update, context: ContextTypes.DEFAULT_TYPE):
     proceed = update.message.text
+    user_data = context.user_data.get('selected_hide_titles')
+
     if proceed == BACK_KEY:
         user_data = context.user_data.get('selected_hide_titles')
         if user_data:
@@ -1151,13 +1103,13 @@ async def get_selected_hide_groups_com(update: Update, context: ContextTypes.DEF
         return LEADERBOARD_SETTING_STATE
 
     elif proceed == "Proceed":
-        user_data = context.user_data.get('selected_hide_titles')
         if user_data:
             message = "Are you sure you want to Hide Leaderboard of these group(s):\n\n"
 
             for index, data in enumerate(user_data, start=1):
                 entry = f"{index}. <b>{data}</b>\n"
                 message += entry
+
             await update.message.reply_text(message, reply_markup=hide_leaderboard_keyboard, parse_mode=ParseMode.HTML)
             return HIDE_LEADERBOARD_STATE
         else:
@@ -1171,22 +1123,21 @@ async def get_selected_hide_groups_com(update: Update, context: ContextTypes.DEF
 @send_action(ChatAction.TYPING)
 async def hide_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     cursor = sqlite_conn.cursor()
+    chat_id = update.effective_message.chat_id
+    job_queue = context.job_queue
     hide = update.message.text
+    user_data = context.user_data.get('selected_hide_titles')
+
     if hide == BACK_KEY:
-        user_data = context.user_data.get('selected_hide_titles')
         if user_data:
-            # Clear the user_data
             context.user_data['selected_hide_titles'] = []
-        cursor.execute("""
-            SELECT * FROM groups_activities WHERE competition = ?;
-            """,
-            (True,),
-        )
+
+        cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
         rows = cursor.fetchall()
 
         if not rows:
             await update.message.reply_text(
-                "The Competition leaderboard is not been displayed in any group(s)\n\nSet time interval if you have not\n\nDisplay Leaderboard then hide it any time you want to.",
+                "No group have been recognised yet.",
                 reply_markup=leaderboard_setting_keyboard,
             )
             return LEADERBOARD_SETTING_STATE
@@ -1196,8 +1147,17 @@ async def hide_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
         # Iterate through the titles and create a button for each
         for row in rows:
-            button = InlineKeyboardButton(row['group_name'], callback_data=row['group_name'])
-            keyboard.append([button])
+            group_name = row['title']
+            if any(job.name == group_name and job.callback == display_board for job in job_queue.jobs()):
+                button = InlineKeyboardButton(group_name, callback_data=group_name)
+                keyboard.append([button])
+
+        if keyboard == []:
+            await update.message.reply_text(
+                "The Competition leaderboard is not been displayed in any group(s)\n\nSet time interval if you have not\n\nDisplay Leaderboard then hide it any time you want to.",
+                reply_markup=leaderboard_setting_keyboard,
+            )
+            return LEADERBOARD_SETTING_STATE
 
         # Create the inline keyboard markup
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1209,31 +1169,11 @@ async def hide_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return SELECT_HIDE_GROUPS_COMPETITION_STATE
 
     elif hide == "Hide":
-        user_data = context.user_data.get('selected_hide_titles')
-
-        chat_id = update.effective_message.chat_id
-
-        job_queue = context.job_queue
-
         for index, data in enumerate(user_data):
             if any(job.name == data and job.callback == display_board for job in job_queue.jobs()):
                 for job in job_queue.jobs():
                     if job.name == data and job.callback == display_board:
                         job.schedule_removal()
-                        cursor.execute(
-                            """
-                            UPDATE groups_activities SET competition = ? WHERE group_name = ?;
-                            """,
-                            (False, data),
-                        )
-                        sqlite_conn.commit()
-            cursor.execute(
-                """
-                UPDATE groups_activities SET competition = ? WHERE group_name = ?;
-                """,
-                (False, data),
-            )
-            sqlite_conn.commit()
 
         await update.message.reply_text(
             "Bot has hide leaderboard for the selected groups.",
@@ -1905,19 +1845,19 @@ async def get_tweets_select_group(update: Update, context: ContextTypes.DEFAULT_
         return TWITTER_STATE
 
     elif get_send_tweet ==  "Get tweets":
-        cursor.execute("SELECT * FROM tweets")
-        results = cursor.fetchall()
-        if results:
-            cursor.execute("DELETE FROM tweets")
-            cursor.execute("UPDATE TwitterSearch SET since_id=? WHERE id=?", (None, 1))
-            sqlite_conn.commit()
-
         if any(job.callback == get_tweets for job in job_queue.jobs()):
             await update.message.reply_text(
                 "Bot is already getting Tweets.",
                 reply_markup=get_send_tweets_keyboard,
             )
             return GET_SEND_TWEETS_STATE
+
+        cursor.execute("SELECT * FROM tweets")
+        results = cursor.fetchall()
+        if results:
+            cursor.execute("DELETE FROM tweets")
+            cursor.execute("UPDATE TwitterSearch SET since_id=? WHERE id=?", (None, 1))
+            sqlite_conn.commit()
 
         sent = False
         context.job_queue.run_repeating(get_tweets, interval=600, first=1, chat_id=chat_id, name=str(chat_id), data=sent)
@@ -1929,36 +1869,16 @@ async def get_tweets_select_group(update: Update, context: ContextTypes.DEFAULT_
         return GET_SEND_TWEETS_STATE
 
     elif get_send_tweet == "Send 💬":
+        chat_id = update.effective_message.chat_id
+        job_queue = context.job_queue
+        cursor = sqlite_conn.cursor()
+
         cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
-        rows = cursor.fetchall()
-
-        for row in rows:
-            group_name = row['title']
-
-            # Check if the title exists in the group_activities table
-            cursor.execute("SELECT * FROM groups_activities WHERE group_name = ?;", (group_name,))
-            result = cursor.fetchone()
-
-            if not result:
-                # If the title is not found, insert it into the group_activities table
-                cursor.execute(
-                    """
-                    INSERT INTO groups_activities (group_name, send_tweets, competition) VALUES (?,?,?);
-                    """,
-                    (group_name,False,False),
-                )
-                sqlite_conn.commit()
-
-        cursor.execute("""
-            SELECT * FROM groups_activities WHERE send_tweets = ?;
-            """,
-            (False,),
-        )
         rows = cursor.fetchall()
 
         if not rows:
             await update.message.reply_text(
-                "Bot is already Sending Tweets to all group(s).",
+                "No group have been recognised yet.",
                 reply_markup=get_send_tweets_keyboard,
             )
             return GET_SEND_TWEETS_STATE
@@ -1968,8 +1888,17 @@ async def get_tweets_select_group(update: Update, context: ContextTypes.DEFAULT_
 
         # Iterate through the titles and create a button for each
         for row in rows:
-            button = InlineKeyboardButton(row['group_name'], callback_data=row['group_name'])
-            keyboard.append([button])
+            group_name = row['title']
+            if not any(job.name == group_name and job.callback == send_tweets for job in job_queue.jobs()):
+                button = InlineKeyboardButton(group_name, callback_data=group_name)
+                keyboard.append([button])
+
+        if keyboard == []:
+            await update.message.reply_text(
+                "Bot is already Sending Tweets to all group(s).",
+                reply_markup=get_send_tweets_keyboard,
+            )
+            return GET_SEND_TWEETS_STATE
 
         # Create the inline keyboard markup
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2007,8 +1936,9 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Callback query handler
 async def get_selected_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
     proceed = update.message.text
+    user_data = context.user_data.get('selected_titles')
+
     if proceed == BACK_KEY:
-        user_data = context.user_data.get('selected_titles')
         if user_data:
             # Clear the user_data
             context.user_data['selected_titles'] = []
@@ -2020,7 +1950,6 @@ async def get_selected_groups(update: Update, context: ContextTypes.DEFAULT_TYPE
         return GET_SEND_TWEETS_STATE
 
     elif proceed == "Proceed":
-        user_data = context.user_data.get('selected_titles')
         if user_data:
             message = "Are you sure you want to send Tweets to these group(s):\n\n"
 
@@ -2040,55 +1969,42 @@ async def get_selected_groups(update: Update, context: ContextTypes.DEFAULT_TYPE
 @send_action(ChatAction.TYPING)
 async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     send = update.message.text
+    user_data = context.user_data.get('selected_titles')
+    chat_id = update.effective_message.chat_id
+    job_queue = context.job_queue
+    cursor = sqlite_conn.cursor()
+
     if send == BACK_KEY:
-        user_data = context.user_data.get('selected_titles')
         if user_data:
             # Clear the user_data
             context.user_data['selected_titles'] = []
 
-        cursor = sqlite_conn.cursor()
         cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
-        rows = cursor.fetchall()
-
-        for row in rows:
-            group_name = row['title']
-
-            # Check if the title exists in the group_activities table
-            cursor.execute("SELECT * FROM groups_activities WHERE group_name = ?;", (group_name,))
-            result = cursor.fetchone()
-
-            if not result:
-                # If the title is not found, insert it into the group_activities table
-                cursor.execute(
-                    """
-                    INSERT INTO groups_activities (group_name, send_tweets, competition) VALUES (?,?,?);
-                    """,
-                    (group_name,False,False),
-                )
-                sqlite_conn.commit()
-
-        cursor.execute(
-            """
-            SELECT * FROM groups_activities WHERE send_tweets = ?;
-            """,
-            (False,),
-        )
         rows = cursor.fetchall()
 
         if not rows:
             await update.message.reply_text(
-                "Bot is already Sending Tweets to all group(s).",
-                reply_markup=get_send_tweets_keyboard,
+                "No group have been recognised yet.",
+                reply_markup=leaderboard_setting_keyboard,
             )
-            return GET_SEND_TWEETS_STATE
+            return LEADERBOARD_SETTING_STATE
 
         # Create a list to store the inline keyboard buttons
         keyboard = []
 
         # Iterate through the titles and create a button for each
         for row in rows:
-            button = InlineKeyboardButton(row['group_name'], callback_data=row['group_name'])
-            keyboard.append([button])
+            group_name = row['title']
+            if not any(job.name == group_name and job.callback == send_tweets for job in job_queue.jobs()):
+                button = InlineKeyboardButton(group_name, callback_data=group_name)
+                keyboard.append([button])
+
+        if keyboard == []:
+            await update.message.reply_text(
+                "Bot is already Sending Tweets to all group(s).",
+                reply_markup=leaderboard_setting_keyboard,
+            )
+            return LEADERBOARD_SETTING_STATE
 
         # Create the inline keyboard markup
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2100,8 +2016,6 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return SELECT_GROUPS_STATE
 
     elif send == "Send 💬":
-        user_data = context.user_data.get('selected_titles')
-
         if FILE_PATH_ON_SERVER is None:
             context.user_data['selected_titles'] = []
             await update.message.reply_text(
@@ -2110,22 +2024,10 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             )
             return TWITTER_STATE
 
-        chat_id = update.effective_message.chat_id
-
-        job_queue = context.job_queue
-
         for index, data in enumerate(user_data):
             media = [FILE_PATH_ON_SERVER, USER_UPLOADED_FILE_TYPE, False]
             media.append(data)
             context.job_queue.run_repeating(send_tweets, interval=1800, first=1, chat_id=chat_id, name=str(data), data = media)
-            cursor = sqlite_conn.cursor()
-            cursor.execute(
-                """
-                UPDATE groups_activities SET send_tweets = ? WHERE group_name = ?;
-                """,
-                (True, data),
-            )
-            sqlite_conn.commit()
 
         await update.message.reply_text(
             "processing ...",
@@ -2179,16 +2081,12 @@ async def stop_get_tweets_select_group(update: Update, context: ContextTypes.DEF
             return STOP_GET_SEND_TWEETS_STATE
 
     elif stop_get_send_tweet == "Stop Sending Tweets ✋":
-        cursor.execute("""
-            SELECT * FROM groups_activities WHERE send_tweets = ?;
-            """,
-            (True,),
-        )
+        cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
         rows = cursor.fetchall()
 
         if not rows:
             await update.message.reply_text(
-                "Bot is not Sending Tweets to any group(s).",
+                "No group have been recognised yet.",
                 reply_markup=stop_get_send_tweets_keyboard,
             )
             return STOP_GET_SEND_TWEETS_STATE
@@ -2198,8 +2096,17 @@ async def stop_get_tweets_select_group(update: Update, context: ContextTypes.DEF
 
         # Iterate through the titles and create a button for each
         for row in rows:
-            button = InlineKeyboardButton(row['group_name'], callback_data=row['group_name'])
-            keyboard.append([button])
+            group_name = row['title']
+            if any(job.name == group_name and job.callback == send_tweets for job in job_queue.jobs()):
+                button = InlineKeyboardButton(group_name, callback_data=group_name)
+                keyboard.append([button])
+
+        if keyboard == []:
+            await update.message.reply_text(
+                "Bot is not Sending Tweets to any group(s).",
+                reply_markup=stop_get_send_tweets_keyboard,
+            )
+            return STOP_GET_SEND_TWEETS_STATE
 
         # Create the inline keyboard markup
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2236,9 +2143,10 @@ async def button_callback_stop(update: Update, context: ContextTypes.DEFAULT_TYP
 
 # Callback query handler
 async def get_selected_groups_stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_data = context.user_data.get('selected_stop_titles')
     proceed = update.message.text
+
     if proceed == BACK_KEY:
-        user_data = context.user_data.get('selected_stop_titles')
         if user_data:
             # Clear the user_data
             context.user_data['selected_stop_titles'] = []
@@ -2246,11 +2154,11 @@ async def get_selected_groups_stop(update: Update, context: ContextTypes.DEFAULT
         await update.message.reply_text(
             'Stop getting and Send Tweets\n\n<b><u>Note:</u></b> If you Stop Getting tweets and all the tweets stored has be sent, no tweets will be sent to the group even if the Bot is still sending tweets to group(s)',
              reply_markup=stop_get_send_tweets_keyboard,
+             parse_mode=ParseMode.HTML,
          )
         return STOP_GET_SEND_TWEETS_STATE
 
     elif proceed == "Proceed":
-        user_data = context.user_data.get('selected_stop_titles')
         if user_data:
             message = "Are you sure you want to stop sending Tweets to these group(s):\n\n"
 
@@ -2271,21 +2179,21 @@ async def get_selected_groups_stop(update: Update, context: ContextTypes.DEFAULT
 async def admin_stop_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     cursor = sqlite_conn.cursor()
     stop = update.message.text
+    user_data = context.user_data.get('selected_stop_titles')
+    chat_id = update.effective_message.chat_id
+    job_queue = context.job_queue
+
     if stop == BACK_KEY:
-        user_data = context.user_data.get('selected_stop_titles')
         if user_data:
             # Clear the user_data
             context.user_data['selected_stop_titles'] = []
-        cursor.execute("""
-            SELECT * FROM groups_activities WHERE send_tweets = ?;
-            """,
-            (True,),
-        )
+
+        cursor.execute("SELECT DISTINCT title FROM chat_stats WHERE type LIKE '%group%';")
         rows = cursor.fetchall()
 
         if not rows:
             await update.message.reply_text(
-                "Bot is not Sending Tweets to any group(s).",
+                "No group have been recognised yet.",
                 reply_markup=stop_get_send_tweets_keyboard,
             )
             return STOP_GET_SEND_TWEETS_STATE
@@ -2295,8 +2203,17 @@ async def admin_stop_send_tweets(update: Update, context: ContextTypes.DEFAULT_T
 
         # Iterate through the titles and create a button for each
         for row in rows:
-            button = InlineKeyboardButton(row['group_name'], callback_data=row['group_name'])
-            keyboard.append([button])
+            group_name = row['title']
+            if any(job.name == group_name and job.callback == send_tweets for job in job_queue.jobs()):
+                button = InlineKeyboardButton(group_name, callback_data=group_name)
+                keyboard.append([button])
+
+        if keyboard == []:
+            await update.message.reply_text(
+                "Bot is not Sending Tweets to any group(s).",
+                reply_markup=stop_get_send_tweets_keyboard,
+            )
+            return STOP_GET_SEND_TWEETS_STATE
 
         # Create the inline keyboard markup
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2308,24 +2225,11 @@ async def admin_stop_send_tweets(update: Update, context: ContextTypes.DEFAULT_T
         return SELECT_STOP_GROUPS_STATE
 
     elif stop == "Stop Sending Tweets ✋":
-        user_data = context.user_data.get('selected_stop_titles')
-
-        chat_id = update.effective_message.chat_id
-
-        job_queue = context.job_queue
-
         for index, data in enumerate(user_data):
             if any(job.name == data and job.callback == send_tweets for job in job_queue.jobs()):
                 for job in job_queue.jobs():
                     if job.name == data and job.callback == send_tweets:
                         job.schedule_removal()
-                        cursor.execute(
-                            """
-                            UPDATE groups_activities SET send_tweets = ? WHERE group_name = ?;
-                            """,
-                            (False, data),
-                        )
-                        sqlite_conn.commit()
 
         await update.message.reply_text(
             "Bot has stopped Sending Tweets to the selected groups.",
