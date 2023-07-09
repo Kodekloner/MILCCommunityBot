@@ -683,8 +683,8 @@ async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         return COMPETITION_STATE
 
     # run_daily(worker_reddit_subscriptions, time=datetime.time(17, 30))
-    context.job_queue.run_repeating(leaderboard, interval=600, first=1, chat_id=chat_id, name=str(chat_id), data=job_params)
-    # context.job_queue.run_daily(leaderboard, time=time(22, 30), chat_id=chat_id, name=str(chat_id), data=job_params)
+    # context.job_queue.run_repeating(leaderboard, interval=600, first=1, chat_id=chat_id, name=str(chat_id), data=job_params)
+    context.job_queue.run_daily(leaderboard, time=time(22, 30), chat_id=chat_id, name=str(chat_id), data=job_params)
 
     await update.message.reply_text(
         "Processing ...\n\nYou will recieve a message in the night at about 11:00pm if it was successful or not.",
@@ -1860,7 +1860,7 @@ async def get_tweets_select_group(update: Update, context: ContextTypes.DEFAULT_
             sqlite_conn.commit()
 
         sent = False
-        context.job_queue.run_repeating(get_tweets, interval=600, first=1, chat_id=chat_id, name=str(chat_id), data=sent)
+        context.job_queue.run_repeating(get_tweets, interval=28800, first=1, chat_id=chat_id, name=str(chat_id), data=sent)
 
         await update.message.reply_text(
             "Processing ...",

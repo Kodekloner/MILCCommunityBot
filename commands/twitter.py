@@ -46,11 +46,11 @@ def generate_oauth1_header():
 
 
 def make_api_request_with_backoff(endpoint, headers, params=None):
-    # retries = 0
+    retries = 0
     delay_seconds = 1  # Initial delay of 1 second
-    # max_retries = 10  # Maximum number of retries
+    max_retries = 30  # Maximum number of retries
 
-    while True:
+    while retries < max_retries:
         if params == None:
             response = requests.get(endpoint, headers=headers)
         else:
@@ -65,6 +65,7 @@ def make_api_request_with_backoff(endpoint, headers, params=None):
             print(response.text)
             delay_seconds *= 2
             sleep(delay_seconds)
+            retries += 1
         else:
             print(response.status_code)
             print(response.text)
@@ -72,7 +73,6 @@ def make_api_request_with_backoff(endpoint, headers, params=None):
             break
 
     # If the maximum number of retries is reached
-    print("Maximum number of retries reached.")
     return None
 
 
@@ -450,7 +450,6 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
     job = context.job
     cursor = sqlite_conn.cursor()
 
-    print(job.data[2])
     # Fetch the distinct group_id and channel_id values
     cursor.execute("SELECT DISTINCT chat_id FROM chat_stats WHERE type LIKE '%group%' AND title = ?;", (job.data[2],),)
     distinct_id = cursor.fetchone()
@@ -472,7 +471,6 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
         for participate in participates:
             p_user = participate['username']
             p_tuser = participate['twitter_username']
-            print(p_tuser)
             cursor.execute(
                 """
                 SELECT user_wallet_twitter.username, user_wallet_twitter.twitter_username, user_wallet_twitter.chat_id, leaderboard.id, leaderboard.tweets, leaderboard.replies, leaderboard.likes, leaderboard.retweets, leaderboard.quotes, leaderboard.total
@@ -495,8 +493,6 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
                         leaderboard[p_user] = 0
             else:
                 leaderboard[p_user] = 0
-
-        print(leaderboard)
 
         # Rearrange the leaderboard dictionary based on values in descending order
         leaderboard = dict(sorted(leaderboard.items(), key=lambda x: x[1], reverse=True))
