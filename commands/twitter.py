@@ -15,7 +15,7 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
-from time import sleep
+import time
 
 import commands
 from config.db import sqlite_conn
@@ -35,45 +35,31 @@ api_key = config["API"]["TWITTER_API_KEY"]
 key_secret = config["API"]["TWITTER_KEY_SECRET"]
 
 
-def generate_oauth1_header():
-    oauth1_auth = OAuth1(
-        api_key,
-        key_secret,
-        access_token,
-        access_token_secret
-    )
-    return oauth1_auth
-
-
 def make_api_request_with_backoff(endpoint, headers, params=None):
-    retries = 0
-    delay_seconds = 1  # Initial delay of 1 second
-    max_retries = 30  # Maximum number of retries
+    if params == None:
+        response = requests.get(endpoint, headers=headers)
+    else:
+        response = requests.get(endpoint, params=params, headers=headers)
 
-    while retries < max_retries:
-        if params == None:
-            response = requests.get(endpoint, headers=headers)
-        else:
-            response = requests.get(endpoint, params=params, headers=headers)
+    if response.status_code == 200:
+        remaining_requests = int(response.headers.get('x-rate-limit-remaining'))
+        reset_time = int(response.headers.get('x-rate-limit-reset'))
+        return response.json(), remaining_requests, reset_time
+    else:
+        print(response.status_code)
+        print(response.text)
+        return None, None, None
 
-        if response.status_code == 200:
-            return response.json()
-            break  # Exit the while loop if the response is successful
-        elif response.status_code == 429:  # Rate limit exceeded
-            # Increase the delay exponentially
-            print(response.status_code)
-            print(response.text)
-            delay_seconds *= 2
-            sleep(delay_seconds)
-            retries += 1
-        else:
-            print(response.status_code)
-            print(response.text)
-            return None
-            break
+def wait_for_rate_limit(remaining_requests, reset_time):
+    print(f"Remaining requests: {remaining_requests}")
+    print(f"Reset time: {reset_time}")
 
-    # If the maximum number of retries is reached
-    return None
+    if remaining_requests == 0:
+        current_time = time.time()
+        sleep_time = reset_time - current_time + 5  # Adding extra 5 seconds buffer
+        return sleep_time
+    else:
+        return 0
 
 
 async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -223,7 +209,6 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
     liking_username_counts = {}
     retweeted_username_counts = {}
     repling_username_counts = {}
-    quote_username_counts = {}
 
     user_scores = {}
 
@@ -240,27 +225,39 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                 # users that retweeted
                 retweeted_endpoint = f'https://api.twitter.com/2/tweets/{tweet_id}/retweeted_by'
-                retweeted_response = make_api_request_with_backoff(retweeted_endpoint, headers=headers)
+                retweeted_response, remaining_requests, reset_time = make_api_request_with_backoff(retweeted_endpoint, headers=headers)
 
                 if retweeted_response is not None:
+                    print("retweeted")
                     print(json.dumps(retweeted_response, indent=2, sort_keys = True))
+                    print()
                     if "data" in retweeted_response:
                         for usernames in retweeted_response["data"]:
                             username = usernames["username"]
                             retweeted_username_counts[username] = retweeted_username_counts.get(username, 0) + 1
 
+                sleep_time = wait_for_rate_limit(remaining_requests, reset_time)
+                if sleep_time > 0:
+                    print(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time...")
+                    time.sleep(sleep_time)
 
                 #users that liked
                 liking_endpoint = f'https://api.twitter.com/2/tweets/{tweet_id}/liking_users'
-                liking_response = make_api_request_with_backoff(liking_endpoint, headers=headers)
+                liking_response, remaining_requests, reset_time = make_api_request_with_backoff(liking_endpoint, headers=headers)
 
                 if liking_response is not None:
+                    print("liked")
                     print(json.dumps(liking_response, indent=2, sort_keys = True))
+                    print()
                     if "data" in liking_response:
                         for usernames in liking_response["data"]:
                             username = usernames["username"]
                             liking_username_counts[username] = liking_username_counts.get(username, 0) + 1
 
+                sleep_time = wait_for_rate_limit(remaining_requests, reset_time)
+                if sleep_time > 0:
+                    print(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time...")
+                    time.sleep(sleep_time)
 
                 #users that replies
                 replies_endpoint = 'https://api.twitter.com/2/tweets/search/recent'
@@ -273,11 +270,13 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                     'expansions': 'author_id'
                 }
 
-                # sleep(2.4)
-                response = make_api_request_with_backoff(replies_endpoint, params=params, headers=headers)
+                # time.sleep(2.4)
+                response, remaining_requests, reset_time = make_api_request_with_backoff(replies_endpoint, params=params, headers=headers)
 
                 if response is not None:
+                    print("replies")
                     print(json.dumps(response, indent=2, sort_keys = True))
+                    print()
 
                     if "data" in response:
                         for tweet in response["data"]:
@@ -288,38 +287,14 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                                         username = users["username"]
                                         repling_username_counts[username] = repling_username_counts.get(username, 0) + 1
 
-
-                # users that quoted a tweet
-                quote_endpoint = f'https://api.twitter.com/2/tweets/{tweet_id}/quote_tweets'
-                params = {
-                    'max_results': '100',
-                    'tweet.fields': 'author_id',
-                    'expansions': 'author_id'
-                }
-                quote_response = make_api_request_with_backoff(quote_endpoint, params=params, headers=headers)
-
-                if quote_response is not None:
-                    print(json.dumps(quote_response, indent=2, sort_keys = True))
-
-                    if "data" in quote_response:
-                        for usernames in quote_response["data"]:
-                            if "username" in  usernames:
-                                quote_username = usernames["username"]
-                                quote_username_counts[quote_username] = quote_username_counts.get(quote_username, 0) + 1
+                sleep_time = wait_for_rate_limit(remaining_requests, reset_time)
+                if sleep_time > 0:
+                    print(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time...")
+                    time.sleep(sleep_time)
 
 
                 username = result['username']
                 tweets_username_counts[username] = tweets_username_counts.get(username, 0) + 1
-
-        # print(tweets_username_counts)
-        # print("_______________________")
-        # print(liking_username_counts)
-        # print("_______________________")
-        # print(retweeted_username_counts)
-        # print("_______________________")
-        # print(repling_username_counts)
-        # print("_______________________")
-        # print(quote_username_counts)
 
         # Loop through tweet_username dictionary
         for username, count in tweets_username_counts.items():
@@ -337,45 +312,24 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
         for username, count in retweeted_username_counts.items():
             user_scores[username] = user_scores.get(username, 0) + (point_system['retweets'] * count)
 
-        # Loop through quote_username dictionary
-        for username, count in quote_username_counts.items():
-            user_scores[username] = user_scores.get(username, 0) + (point_system['quote'] * count)
+        # Iterate over the combined counts and insert them into the table
+        for username, score in user_scores.items():
+            tweets = tweets_username_counts.get(username, 0)
+            likes = liking_username_counts.get(username, 0)
+            retweets = retweeted_username_counts.get(username, 0)
+            replies = repling_username_counts.get(username, 0)
+            # quotes = quote_username_counts.get(username, 0)
+            total = score
 
+            # Update the scores for existing users
+            cursor.execute('UPDATE leaderboard SET tweets = tweets + ?, replies = replies + ?, likes = likes + ?, retweets = retweets + ?, total = total + ? WHERE username = ?',
+                           (tweets, replies, likes, retweets, total, username))
+            sqlite_conn.commit()
 
-        # Execute a query to fetch data from the table
-        cursor.execute("SELECT COUNT(*) FROM leaderboard")
-        result = cursor.fetchone()
-
-        # Check if the table is empty
-        if result[0] == 0:
-
-            # Iterate over the combined counts and insert them into the table
-            for username, score in user_scores.items():
-                tweets = tweets_username_counts.get(username, 0)
-                likes = liking_username_counts.get(username, 0)
-                retweets = retweeted_username_counts.get(username, 0)
-                replies = repling_username_counts.get(username, 0)
-                quotes = quote_username_counts.get(username, 0)
-                total = score
-
-                cursor.execute('INSERT INTO leaderboard (username, tweets, replies, likes, retweets, quotes, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                               (username, tweets, replies, likes, retweets, quotes, total))
-                sqlite_conn.commit()
-        else:
-            # Table is not empty, remove current data and add new ones
-            cursor.execute("DELETE FROM leaderboard")
-            # Perform your insert operation here
-            for username, score in user_scores.items():
-                tweets = tweets_username_counts.get(username, 0)
-                likes = liking_username_counts.get(username, 0)
-                retweets = retweeted_username_counts.get(username, 0)
-                replies = repling_username_counts.get(username, 0)
-                quotes = quote_username_counts.get(username, 0)
-                total = score
-
-                cursor.execute('INSERT INTO leaderboard VALUES (?, ?, ?, ?, ?, ?, ?)',
-                               (username, tweets, replies, likes, retweets, quotes, total))
-                sqlite_conn.commit()
+            # Insert new users
+            cursor.execute('INSERT INTO leaderboard (username, tweets, replies, likes, retweets, total) SELECT ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM leaderboard WHERE username = ?)',
+                           (username, tweets, replies, likes, retweets, total, username))
+            sqlite_conn.commit()
 
         if not job.data[1]:
             await context.bot.send_message(job.chat_id,
@@ -473,7 +427,7 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
             p_tuser = participate['twitter_username']
             cursor.execute(
                 """
-                SELECT user_wallet_twitter.username, user_wallet_twitter.twitter_username, user_wallet_twitter.chat_id, leaderboard.id, leaderboard.tweets, leaderboard.replies, leaderboard.likes, leaderboard.retweets, leaderboard.quotes, leaderboard.total
+                SELECT user_wallet_twitter.username, user_wallet_twitter.twitter_username, user_wallet_twitter.chat_id, leaderboard.id, leaderboard.tweets, leaderboard.replies, leaderboard.likes, leaderboard.retweets, leaderboard.total
                 FROM leaderboard
                 JOIN user_wallet_twitter ON leaderboard.username = user_wallet_twitter.twitter_username
                 WHERE user_wallet_twitter.ban = ? AND user_wallet_twitter.telegram_group = ?
