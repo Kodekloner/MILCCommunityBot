@@ -682,7 +682,6 @@ async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         )
         return COMPETITION_STATE
 
-    # run_daily(worker_reddit_subscriptions, time=datetime.time(17, 30))
     # context.job_queue.run_repeating(leaderboard, interval=600, first=1, chat_id=chat_id, name=str(chat_id), data=job_params)
     context.job_queue.run_daily(leaderboard, time=time(22, 30), chat_id=chat_id, name=str(chat_id), data=job_params)
 
