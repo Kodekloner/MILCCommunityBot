@@ -116,17 +116,17 @@ async def handle_invalid_message(update: Update, context: ContextTypes.DEFAULT_T
 
     #Check if message is a command orspecifically mentions the bot's username
     if message.text.startswith("/") or context.bot.username.lower() in message.text.lower() or message.reply_to_message and message.reply_to_message.from_user.id == context.bot.id:
-        reply_text = "I'm sorry, but I didn't understand that command or Message."
+        reply_text = "I'm sorry, but I didn't understand that command or message."
         reply_text += "\n\nHere are some suggestions:"
         reply_text += "\n- Please make sure you're using the correct command."
-        reply_text += "\n- Use the keys on the keyboard to Send me Message."
+        reply_text += "\n- Use the keys on the keyboard to send me message."
 
         await message.reply_text(reply_text)
     elif chat.type == "private":
-        reply_text = "I'm sorry, but I didn't understand that command or Message."
+        reply_text = "I'm sorry, but I didn't understand that command or message."
         reply_text += "\n\nHere are some suggestions:"
         reply_text += "\n- Please make sure you're using the correct command."
-        reply_text += "\n- Use the keys on the keyboard to Send me Message."
+        reply_text += "\n- Use the keys on the keyboard to send me message."
 
         await message.reply_text(reply_text)
     else:
@@ -242,10 +242,116 @@ async def get_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 
 @restricted
 @send_action(ChatAction.TYPING)
+async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    cursor = sqlite_conn.cursor()
+
+    job_queue = context.job_queue
+
+    for job in job_queue.jobs():
+            job.schedule_removal()
+
+    tables = ["tweets", "leaderboard", "TwitterSearch", "leaderboard_time_intervals", "point_system", "prize"]
+
+    for table in tables:
+        drop_query = f"DROP TABLE {table};"
+        cursor.execute(drop_query)
+
+        if table == "tweets":
+            # Table for Tweets
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS `tweets` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+                    `tweets` TEXT NOT NULL,
+                    `tw_id` INTEGER,
+                    `images` TEXT,
+                    `created_at` TEXT,
+                    `username` TEXT,
+                    `sent_at` TEXT,
+                    `sent` BOOLEAN
+                );
+                """
+            )
+
+        if table == "leaderboard":
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS `leaderboard` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+                    `username` TEXT,
+                    `tweets` INTEGER,
+                    `replies` INTEGER,
+                    `likes` INTEGER,
+                    `retweets` INTEGER,
+                    `quotes` INTEGER,
+                    `total` INTEGER
+                );
+                """
+            )
+
+        if table == "TwitterSearch":
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS `TwitterSearch`(
+                    `id` INTEGER PRIMARY KEY,
+                    `word` TEXT,
+                    `since_id` INTEGER
+                );
+                """
+            )
+
+        if table == "leaderboard_time_intervals":
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS `leaderboard_time_intervals` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+                    `time_intervals` TEXT
+                );
+                """
+            )
+
+        if table == "point_system":
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS `point_system` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+                    `tweets` INTEGER,
+                    `replies` INTEGER,
+                    `likes` INTEGER,
+                    `retweets` INTEGER,
+                    `quotes` INTEGER
+                );
+                """
+            )
+
+        if table == "prize":
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS `prize` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+                    `token` FLOAT(8)
+                );
+                """
+            )
+
+
+
+
+    message = "<b>Bot has been reseted</b>"
+
+    await update.message.reply_text(
+        text=message,
+        reply_markup=base_keyboard,
+        parse_mode=ParseMode.HTML,
+    )
+    return HOME_STATE
+
+@restricted
+@send_action(ChatAction.TYPING)
 async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Add an Admin,\nthey will have access to the admin features\n"
-        "Send the UserId of the user you want to add.\n"
+        "Add an admin,\nthey will have access to the admin features\n"
+        "Send the userId of the user you want to add.\n"
         "Please it should be correct.\n\n"
         "Example:\n"
         "5311490301",
@@ -269,7 +375,7 @@ async def add_admin_to_env(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         except ValueError:
             print(admin_id)
             await update.message.reply_text(
-                "Please the UserId is invalid",
+                "Please the userId is invalid",
                 reply_markup=back_to_home_keyboard,
             )
             return ADD_ADMIN_STATE
@@ -318,15 +424,15 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     result = cursor.fetchone()
     if result:
         await update.message.reply_text(
-            "These Keywords are been searched already\n\n"
+            "These keywords are already searched\n\n"
             f"<b><em>{result['word']}</em></b>\n\n"
-            "Change the Keywords would you like to search on twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\nMLT #MILC @MILCplatform",
+            "Change the keywords you want to search for on Twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\n\nMLT #MILC @MILCplatform",
             reply_markup=back_keyboard,
             parse_mode=ParseMode.HTML,
         )
     else:
         await update.message.reply_text(
-            "Set the Keywords would you like to search on twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\nMLT #MILC @MILCplatform",
+            "Set the keywords you want to search for on Twitter.\n\n Example:\n MLT OR #MILC OR @MILCplatform\n\nMLT #MILC @MILCplatform",
             reply_markup=back_keyboard,
         )
     return SEARCH_STATE
@@ -350,16 +456,14 @@ async def store_search(update: Update, context: ContextTypes.DEFAULT_TYPE)-> str
     # If rows exist, update the row
     if result > 0:
         cursor.execute("UPDATE TwitterSearch SET word = ? WHERE id = ?", (message, 1))
-        cursor.execute("UPDATE TwitterCompetitionSearch SET word = ? WHERE id = ?", (message, 1))
         await update.message.reply_text(
-            "Search word Updated Successfully, Tap on Send 💬",
+            "Search word updated successfully, Tap on Send 💬",
             reply_markup=twitter_keyboard,
         )
     else:
         cursor.execute("INSERT INTO TwitterSearch (word) VALUES (?)", (message,))
-        cursor.execute("INSERT INTO TwitterCompetitionSearch (word) VALUES (?)", (message,))
         await update.message.reply_text(
-            "Search Subject Added Successfully, Tap on Send 💬",
+            "Search Subject added successfully, Tap on Send 💬",
             reply_markup=twitter_keyboard,
         )
 
@@ -373,15 +477,15 @@ async def store_search(update: Update, context: ContextTypes.DEFAULT_TYPE)-> str
 async def upload_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     if FILE_PATH_ON_SERVER is None:
         await update.message.reply_text(
-            "Upload an image or gif that will be used for the tweets",
+            "Upload an image or GIF that will be used for the tweets",
             reply_markup=back_keyboard,
         )
     else:
         if USER_UPLOADED_FILE_TYPE == "Photo":
-            message = "These image is Currently used for the tweets\nUpload a new photo or Gif to change it."
+            message = "These image is currently used for the tweets\nUpload a new photo or GIF to change it."
             await update.effective_user.send_photo(photo=FILE_PATH_ON_SERVER, caption=message, reply_markup=back_keyboard,)
         elif USER_UPLOADED_FILE_TYPE == "Gif":
-            message = "These gif is Currently used for the tweets\nUpload a new photo or Gif to change it."
+            message = "These GIF is currently used for the tweets\nUpload a new photo or GIF to change it."
             await update.effective_user.send_animation(animation=FILE_PATH_ON_SERVER, caption=message, reply_markup=back_keyboard,)
     return UPLOAD_PHOTO_STATE
 
@@ -428,7 +532,7 @@ async def store_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
             message = "Successfully changed the image"
             await update.effective_user.send_photo(photo=FILE_PATH_ON_SERVER, caption=message, reply_markup=back_keyboard,)
         elif USER_UPLOADED_FILE_TYPE == "Gif":
-            message = "Successfully changed the gif"
+            message = "Successfully changed the GIF"
             await update.effective_user.send_animation(animation=FILE_PATH_ON_SERVER, caption=message, reply_markup=back_keyboard,)
     else:
         logger.info("starting download media ...")
@@ -437,10 +541,10 @@ async def store_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
         FILE_PATH_ON_SERVER = str(file_path)
 
         if USER_UPLOADED_FILE_TYPE == "Photo":
-            message = "Successfully Uploaded the image"
+            message = "Successfully uploaded the image"
             await update.effective_user.send_photo(photo=FILE_PATH_ON_SERVER, caption=message, reply_markup=back_keyboard,)
         elif USER_UPLOADED_FILE_TYPE == "Gif":
-            message = "Successfully Uploaded the gif"
+            message = "Successfully uploaded the GIF"
             await update.effective_user.send_animation(animation=FILE_PATH_ON_SERVER, caption=message, reply_markup=back_keyboard,)
     return UPLOAD_PHOTO_STATE
 
@@ -448,7 +552,7 @@ async def store_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
 @send_action(ChatAction.TYPING)
 async def competition(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Control the Competition From here",
+        "Control the competition from here",
         reply_markup=competition_keyboard,
     )
     return COMPETITION_STATE
@@ -489,7 +593,7 @@ async def set_point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 
     if result:
         await update.message.reply_text(
-            "You have already set the points,\n To change the point tap on the Change points 📝",
+            "You have already set the points. To change the points, tap the Change Points button 📝.",
             reply_markup=setup_points_keyboard,
         )
         return SETUP_POINTS_STATE
@@ -525,7 +629,7 @@ async def change_points(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
 @send_action(ChatAction.TYPING)
 async def back_to_competition(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Control the Competition From here",
+        "Control the competition from here",
         reply_markup=competition_keyboard,
     )
     return COMPETITION_STATE
@@ -664,12 +768,7 @@ async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     chat_id = update.effective_message.chat_id
     # Get the current timestamp
 
-    current_time = datetime.now()
-
-    # Subtract one day from the current timestamp
-    previous_day = current_time - timedelta(days=1)
-
-    job_params = [previous_day, False]
+    job_params = False
     # Format the previous day as "YYYY-MM-DD"
     # formatted_time = previous_day.strftime("%Y-%m-%d")
 
@@ -677,10 +776,31 @@ async def star_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 
     if any(job.callback == leaderboard for job in job_queue.jobs()):
         await update.message.reply_text(
-            "Bot is has already Started Competition",
+            "Bot has already started the competition",
             reply_markup=competition_keyboard,
         )
         return COMPETITION_STATE
+
+    cursor = sqlite_conn.cursor()
+    drop_query = f"DROP TABLE leaderboard;"
+    cursor.execute(drop_query)
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS `leaderboard` (
+            `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+            `username` TEXT,
+            `tweets` INTEGER,
+            `replies` INTEGER,
+            `likes` INTEGER,
+            `retweets` INTEGER,
+            `quotes` INTEGER,
+            `total` INTEGER
+        );
+        """
+    )
+
+    sqlite_conn.commit()
 
     # context.job_queue.run_repeating(leaderboard, interval=600, first=1, chat_id=chat_id, name=str(chat_id), data=job_params)
     context.job_queue.run_daily(leaderboard, time=time(22, 30), chat_id=chat_id, name=str(chat_id), data=job_params)
@@ -703,13 +823,13 @@ async def stop_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
                 job.schedule_removal()
 
         await update.message.reply_text(
-            "Competition Stopped, successfully.",
+            "Competition successfully stopped.",
             reply_markup=competition_keyboard,
         )
         return COMPETITION_STATE
     else:
         await update.message.reply_text(
-            "The Competition has not Started Yet. Start the Competition",
+            "The competition have not started yet. Start the competition",
             reply_markup=competition_keyboard,
         )
         return COMPETITION_STATE
@@ -718,7 +838,7 @@ async def stop_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 @send_action(ChatAction.TYPING)
 async def comp_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Please follow the procedure\nFirst Set the time Interval for the leaderboard\nTap on Display\nWhen you want to stop tap on Hide",
+        "Please follow the procedure:\nFirst, set the time interval for the leaderboard. Then tap on display.\nIf you want to stop, tap Hide.",
         reply_markup=leaderboard_setting_keyboard,
     )
     return LEADERBOARD_SETTING_STATE
@@ -736,12 +856,12 @@ async def leaderboard_time_settings(update: Update, context: ContextTypes.DEFAUL
         time = interval_parts[0].strip()
         value = interval_parts[1].strip()
         await update.message.reply_text(
-            f"Time Interval is Currently Set to:\nEvery {value} {time}\n\nUse the Keys below to update the time interval👇",
+            f"The time interval is currently set to:\nEvery {value} {time}\n\nUse the following buttons to update the time interval👇",
             reply_markup=leaderboard_time_settings_keyboard,
         )
     else:
         await update.message.reply_text(
-            f"Time Interval is Not Set\n\nUse the Keys below to set the time interval👇",
+            f"Time Interval is not set\n\nUse the keys below to set the time interval👇",
             reply_markup=leaderboard_time_settings_keyboard,
         )
     return TIME_INTERVAL_STATE
@@ -752,7 +872,7 @@ async def set_time_interval(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     time_interval = update.message.text
     if time_interval == "Back ◀️":
         await update.message.reply_text(
-            "Please follow the procedure\nFirst Set the time Interval for the leaderboard\nTap on Display\nWhen you want to stop tap on Hide",
+            "Please follow the procedure:\nFirst, set the time interval for the leaderboard. Then tap on display.\nIf you want to stop, tap Hide.",
             reply_markup=leaderboard_setting_keyboard,
         )
         return LEADERBOARD_SETTING_STATE
@@ -788,12 +908,12 @@ async def store_time_interval(update: Update, context: ContextTypes.DEFAULT_TYPE
             time = interval_parts[0].strip()
             value = interval_parts[1].strip()
             await update.message.reply_text(
-                f"Time Interval is Currently Set to:\nEvery {value} {time}\n\nUse the Keys below to update the time interval👇",
+                f"The time interval is currently set to:\nEvery {value} {time}\nUse the following buttons to update the time interval👇\n",
                 reply_markup=leaderboard_time_settings_keyboard,
             )
         else:
             await update.message.reply_text(
-                f"Time Interval is Not Set\n\nUse the Keys below to update the time interval👇",
+                f"Time Interval is not set\n\nUse the Keys below to update the time interval👇",
                 reply_markup=leaderboard_time_settings_keyboard,
             )
         return TIME_INTERVAL_STATE
@@ -818,7 +938,7 @@ async def store_time_interval(update: Update, context: ContextTypes.DEFAULT_TYPE
                 cursor.execute("UPDATE leaderboard_time_intervals SET time_intervals = ?", (interval_message,))
                 sqlite_conn.commit()
                 await update.message.reply_text(
-                    f"Time Interval has be Successfully updated to:\nEvery {time_interval_value} {time_interval}\n\nGo back to display the leaerboard using the set time interval",
+                    f"Time Interval has be successfully updated to:\nEvery {time_interval_value} {time_interval}\n\nGo back to display the leaerboard using the set time interval",
                     reply_markup=leaderboard_time_settings_keyboard,
                 )
             else:
@@ -826,13 +946,13 @@ async def store_time_interval(update: Update, context: ContextTypes.DEFAULT_TYPE
                                (interval_message,))
                 sqlite_conn.commit()
                 await update.message.reply_text(
-                    f"Time Interval has be Successfully Set to:\nEvery {time_interval_value} {time_interval}\n\nGo back to display the leaerboard using the set time interval",
+                    f"Time Interval has be successfully Set to:\nEvery {time_interval_value} {time_interval}\n\nGo back to display the leaerboard using the set time interval",
                     reply_markup=leaderboard_time_settings_keyboard,
                 )
 
         else:
             await update.message.reply_text(
-                f"There was an Issue",
+                f"There was an issue",
                 reply_markup=leaderboard_time_settings_keyboard,
             )
         return TIME_INTERVAL_STATE
@@ -877,7 +997,7 @@ async def get_groups_display_leaderboard(update: Update, context: ContextTypes.D
 
     # Send the inline keyboard to the user
     await update.message.reply_text('Select the group(s) to display Leaderboard:', reply_markup=reply_markup)
-    await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+    await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
     return SELECT_GROUPS_COMPETITION_STATE
 
@@ -908,7 +1028,7 @@ async def get_selected_groups_com(update: Update, context: ContextTypes.DEFAULT_
             context.user_data['selected_com_titles'] = []
 
         await update.message.reply_text(
-            "Please follow the procedure\nFirst Set the time Interval for the leaderboard\nTap on Display\nWhen you want to stop tap on Hide",
+            "Please follow the procedure:\nFirst, set the time interval for the leaderboard. Then tap on display.\nIf you want to stop, tap Hide.",
              reply_markup=leaderboard_setting_keyboard,
         )
         return LEADERBOARD_SETTING_STATE
@@ -916,7 +1036,7 @@ async def get_selected_groups_com(update: Update, context: ContextTypes.DEFAULT_
     elif proceed == "Proceed":
         user_data = context.user_data.get('selected_com_titles')
         if user_data:
-            message = "Are you sure you want to Display Leaderboard to these group(s):\n\n"
+            message = "Are you sure you want to display Leaderboard to these group(s):\n\n"
 
             for index, data in enumerate(user_data, start=1):
                 entry = f"{index}. <b>{data}</b>\n"
@@ -926,7 +1046,7 @@ async def get_selected_groups_com(update: Update, context: ContextTypes.DEFAULT_
         else:
             await update.message.reply_text("You haven't selected any group(s).")
     else:
-        await update.message.reply_text("Invalid Message.")
+        await update.message.reply_text("Invalid message.")
     return SELECT_GROUPS_COMPETITION_STATE
 
 
@@ -975,8 +1095,8 @@ async def display_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         # Send the inline keyboard to the user
-        await update.message.reply_text('Select the group(s) to display Leaderboard:', reply_markup=reply_markup)
-        await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+        await update.message.reply_text('Select the group(s) to display leaderboard:', reply_markup=reply_markup)
+        await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
         return SELECT_GROUPS_COMPETITION_STATE
 
@@ -1053,7 +1173,7 @@ async def get_groups_hide_leaderboard(update: Update, context: ContextTypes.DEFA
 
     if keyboard == []:
         await update.message.reply_text(
-            "The Competition leaderboard is not been displayed in any group(s)\n\nSet time interval if you have not\n\nDisplay Leaderboard then hide it any time you want to.",
+            "The competition leaderboard is not displayed in any group(s).\nSet a time interval if you do not have one yet.\nDisplay and hide the leaderboard whenever you want.",
             reply_markup=leaderboard_setting_keyboard,
         )
         return LEADERBOARD_SETTING_STATE
@@ -1062,8 +1182,8 @@ async def get_groups_hide_leaderboard(update: Update, context: ContextTypes.DEFA
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Send the inline keyboard to the user
-    await update.message.reply_text('Select the group(s) to Hide Leaderboard:', reply_markup=reply_markup)
-    await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+    await update.message.reply_text('Select the group(s) to hide the leaderboard for:', reply_markup=reply_markup)
+    await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
     return SELECT_HIDE_GROUPS_COMPETITION_STATE
 
@@ -1096,14 +1216,14 @@ async def get_selected_hide_groups_com(update: Update, context: ContextTypes.DEF
             context.user_data['selected_hide_titles'] = []
 
         await update.message.reply_text(
-            "Please follow the procedure\nFirst Set the time Interval for the leaderboard\nTap on Display\nWhen you want to stop tap on Hide",
+            "Please follow the procedure:\nFirst, set the time interval for the leaderboard. Then tap on display.\nIf you want to stop, tap Hide.",
              reply_markup=leaderboard_setting_keyboard,
         )
         return LEADERBOARD_SETTING_STATE
 
     elif proceed == "Proceed":
         if user_data:
-            message = "Are you sure you want to Hide Leaderboard of these group(s):\n\n"
+            message = "Are you sure you want to hide the leaderboard of this group(s):\n\n"
 
             for index, data in enumerate(user_data, start=1):
                 entry = f"{index}. <b>{data}</b>\n"
@@ -1114,7 +1234,7 @@ async def get_selected_hide_groups_com(update: Update, context: ContextTypes.DEF
         else:
             await update.message.reply_text("You haven't selected any group(s).")
     else:
-        await update.message.reply_text("Invalid Message.")
+        await update.message.reply_text("Invalid message.")
     return SELECT_HIDE_GROUPS_COMPETITION_STATE
 
 
@@ -1162,8 +1282,8 @@ async def hide_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         # Send the inline keyboard to the user
-        await update.message.reply_text('Select the group(s) to Hide Leaderboard:', reply_markup=reply_markup)
-        await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+        await update.message.reply_text('Select the group(s) to hide the leaderboard for:', reply_markup=reply_markup)
+        await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
         return SELECT_HIDE_GROUPS_COMPETITION_STATE
 
@@ -1185,7 +1305,7 @@ async def hide_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 @send_action(ChatAction.TYPING)
 async def comp_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        'Manage Participants',
+        'Manage participant(s)',
         reply_markup=participant_keyboard,
     )
     return PARTICIPANT_STATE
@@ -1211,7 +1331,7 @@ async def view_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             message += entry
 
         # Add emojis and formatting
-        message = "👨‍💼 <b>Participant</b> 👩‍💼\n\n" + message
+        message = "👨‍💼 <b>Participant(s)</b> 👩‍💼\n\n" + message
 
         await update.message.reply_text(
             message,
@@ -1220,7 +1340,7 @@ async def view_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
     else:
         await update.message.reply_text(
-            "You don't have a Participant yet",
+            "You don't have a participant yet",
             reply_markup=participant_keyboard,
         )
     return PARTICIPANT_STATE
@@ -1229,7 +1349,7 @@ async def view_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 @send_action(ChatAction.TYPING)
 async def ban_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        'Input the Username of the participant you want to ban',
+        'Input the username of the participant you want to ban',
         reply_markup=back_keyboard,
     )
     return BAN_PARTICIPANT_STATE
@@ -1241,7 +1361,7 @@ async def comfirm_ban_participant(update: Update, context: ContextTypes.DEFAULT_
     context.user_data['user_to_ban'] = ban
     if ban == "Back ◀️":
         await update.message.reply_text(
-            'Manage Participants',
+            'Manage participant(s)',
             reply_markup=participant_keyboard,
         )
         return PARTICIPANT_STATE
@@ -1276,7 +1396,7 @@ async def delete_participant(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return PARTICIPANT_STATE
     elif ban == "No":
         await update.message.reply_text(
-            'Manage Participants',
+            'Manage participant(s)',
             reply_markup=participant_keyboard,
         )
         return PARTICIPANT_STATE
@@ -1285,7 +1405,7 @@ async def delete_participant(update: Update, context: ContextTypes.DEFAULT_TYPE)
 @send_action(ChatAction.TYPING)
 async def dis_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Set Prize for Each position in the competition and\nDistribute tokens to winners",
+        "Set the prize for each position in the competition; and distribute tokens to the winners.\n",
         reply_markup=setup_prize_keyboard,
     )
     return SETUP_PRIZE_STATE
@@ -1299,9 +1419,16 @@ async def set_prize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     results = cursor.fetchall()
 
     if results:
+        message = "<b>Current prize(s)</b>\n"
+        for result in results:
+            message += f"{str(result['id'])}-{str(result['token'])}\n"
+
+        message += "\n"
+        message += "You have already set the prize. To change the prize, tap the Change Prize button."
         await update.message.reply_text(
-            "You have already set the Prize,\n To change the prize tap on the Change prize 📝",
+            message,
             reply_markup=setup_prize_keyboard,
+            parse_mode=ParseMode.HTML,
         )
         return SETUP_PRIZE_STATE
     else:
@@ -1321,9 +1448,16 @@ async def change_prize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
     results = cursor.fetchall()
 
     if results:
+        message = "<b>Current prize(s)</b>\n"
+        for result in results:
+            message += f"{result['id']}-{result['token']}\n"
+
+        message += "\n"
+        message += MESSAGE_FOR_CHANGE_PRIZE
         await update.message.reply_text(
-            MESSAGE_FOR_CHANGE_PRIZE,
+            message,
             reply_markup=back_keyboard,
+            parse_mode=ParseMode.HTML,
         )
         return UPDATE_PRIZE_STATE
     else:
@@ -1342,68 +1476,45 @@ async def insertprize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
     results = cursor.fetchall()
 
     if prizes == "Back ◀️":
+        await update.message.reply_text(
+            SET_PRIZE_SYSTEM,
+            reply_markup=setup_prize_keyboard,
+        )
+        return SETUP_PRIZE_STATE
+
+    else:
+        prizes = prizes.strip().split('\n')
+
+        # Check if the input string is valid
+        for prize in prizes:
+            if not check_valid_number(prize):
+                await update.message.reply_text(
+                    "Invalid input please follow the format",
+                    reply_markup=back_keyboard,
+                )
+                return INSERT_PRIZE_STATE
+
+        cursor = sqlite_conn.cursor()
+        for prize in prizes:
+            cursor.execute("INSERT INTO prize (token) VALUES (?)", (prize,))
+            sqlite_conn.commit()
+
+        cursor.execute("SELECT * FROM prize")
+        results = cursor.fetchall()
         if results:
             message = ""
             for result in results:
                 message += f"{result['id']}-{result['token']}\n"
 
             message += "\n"
-            message += "To change the point tap on the Change prize 📝"
+            message += "To change the prize, tap the Change Prize button"
             message = "successfully set competition prize\n\n" + message
-
             await update.message.reply_text(
                 message,
                 reply_markup=setup_prize_keyboard,
                 parse_mode=ParseMode.MARKDOWN,
             )
-        else:
-            await update.message.reply_text(
-                SET_PRIZE_SYSTEM,
-                reply_markup=setup_prize_keyboard,
-            )
-        return SETUP_PRIZE_STATE
-
-    else:
-        if results:
-            await update.message.reply_text(
-                MESSAGE_FOR_WRONG_SET_PRIZE,
-                reply_markup=setup_prize_keyboard,
-            )
             return SETUP_PRIZE_STATE
-        else:
-            prizes = prizes.strip().split('\n')
-
-            # Check if the input string is valid
-            for prize in prizes:
-                print(prize)
-                if not check_valid_number(prize):
-                    await update.message.reply_text(
-                        "Invalid input please follow the format",
-                        reply_markup=back_keyboard,
-                    )
-                    return INSERT_PRIZE_STATE
-
-            cursor = sqlite_conn.cursor()
-            for prize in prizes:
-                cursor.execute("INSERT INTO prize (token) VALUES (?)", (prize,))
-                sqlite_conn.commit()
-
-            cursor.execute("SELECT * FROM prize")
-            results = cursor.fetchall()
-            if results:
-                message = ""
-                for result in results:
-                    message += f"{result['id']}-{result['token']}\n"
-
-                message += "\n"
-                message += "To change the point tap on the Change prize 📝"
-                message = "successfully set competition prize\n\n" + message
-                await update.message.reply_text(
-                    message,
-                    reply_markup=setup_prize_keyboard,
-                    parse_mode=ParseMode.MARKDOWN,
-                )
-                return SETUP_PRIZE_STATE
 
 
 @restricted
@@ -1415,81 +1526,68 @@ async def updateprize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
     results = cursor.fetchall()
 
     if prizes == "Back ◀️":
-        if results:
-            message = ""
-            for result in results:
-                message += f"{result['id']}-{result['token']}\n"
+        message = "<b>Current prize(s)</b>\n"
+        for result in results:
+            message += f"{result['id']}-{result['token']}\n"
 
-            message += "\n"
-            message += "To change the point tap on the Change prize 📝"
-            await update.message.reply_text(
-                message,
-                reply_markup=setup_prize_keyboard,
-                parse_mode=ParseMode.MARKDOWN,
-            )
-        else:
-            await update.message.reply_text(
-                SET_PRIZE_SYSTEM,
-                reply_markup=setup_prize_keyboard,
-            )
+        message += "\n"
+        message += "To change the prize, tap the Change Prize button"
+        await update.message.reply_text(
+            message,
+            reply_markup=setup_prize_keyboard,
+            parse_mode=ParseMode.HTML,
+        )
         return SETUP_PRIZE_STATE
 
     else:
-        if results:
-            prizes = prizes.strip().split('\n')
-            for prize in prizes:
-                print(prize)
-                if "-" not in prize:
-                    await update.message.reply_text(
-                        "Invalid input please follow the format",
-                        reply_markup=back_keyboard,
-                    )
-                    return UPDATE_PRIZE_STATE
+        prizes = prizes.strip().split('\n')
+        for prize in prizes:
+            if "-" not in prize:
+                await update.message.reply_text(
+                    "Invalid input please follow the format",
+                    reply_markup=back_keyboard,
+                )
+                return UPDATE_PRIZE_STATE
 
-                id_number = prize.split("-")
-                if len(id_number) != 2:
-                    await update.message.reply_text(
-                        "Invalid input please follow the format",
-                        reply_markup=back_keyboard,
-                    )
-                    return UPDATE_PRIZE_STATE
+            id_number = prize.split("-")
+            if len(id_number) != 2:
+                await update.message.reply_text(
+                    "Invalid input please follow the format",
+                    reply_markup=back_keyboard,
+                )
+                return UPDATE_PRIZE_STATE
 
-                position = id_number[0]
-                prize_value = id_number[1]
+            position = id_number[0]
+            prize_value = id_number[1]
 
-                if not position.isdigit() or not check_valid_number(prize_value):
-                    await update.message.reply_text(
-                        "Invalid input please follow the format",
-                        reply_markup=back_keyboard,
-                    )
-                    return UPDATE_PRIZE_STATE
+            if not position.isdigit() or not check_valid_number(prize_value):
+                await update.message.reply_text(
+                    "Invalid input please follow the format",
+                    reply_markup=back_keyboard,
+                )
+                return UPDATE_PRIZE_STATE
 
-                position = int(position)
+            position = int(position)
 
-                cursor.execute("UPDATE prize SET token = ? WHERE id = ?", (prize_value, position))
-                sqlite_conn.commit()
+            cursor.execute("INSERT OR REPLACE INTO prize (id, token) VALUES (?, ?)", (position, prize_value))
+            sqlite_conn.commit()
 
-            cursor.execute("SELECT * FROM prize")
-            results = cursor.fetchall()
-            message = ""
-            for result in results:
-                message += f"{result['id']}-{result['token']}\n"
+        cursor.execute("SELECT * FROM prize")
+        results = cursor.fetchall()
+        message = ""
+        for result in results:
+            message += f"{result['id']}-{result['token']}\n"
 
-            message += "\n"
-            message += "To change the point tap on the Change prize 📝"
+        message += "\n"
+        message = "successfully changed competition prize\n\n" + message
 
-            await update.message.reply_text(
-                message,
-                reply_markup=setup_prize_keyboard,
-                parse_mode=ParseMode.MARKDOWN,
-            )
-            return SETUP_PRIZE_STATE
-        else:
-            await update.message.reply_text(
-                MESSAGE_FOR_WRONG_CHANGE_PRIZE,
-                reply_markup=setup_prize_keyboard,
-            )
-            return SETUP_prizes_STATE
+        await update.message.reply_text(
+            message,
+            reply_markup=setup_prize_keyboard,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return SETUP_PRIZE_STATE
+
 
 @restricted
 @send_action(ChatAction.TYPING)
@@ -1526,7 +1624,7 @@ async def get_groups_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
             # Send the inline keyboard to the user
             await update.message.reply_text('Select the group(s) to send tokens to winners:', reply_markup=reply_markup)
-            await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+            await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
             return SELECT_GROUPS_DIS_STATE
 
@@ -1543,7 +1641,7 @@ async def get_groups_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             )
     else:
         await update.message.reply_text(
-            "Set Prize for Each position in the competition.\nBefore send token",
+            "Set prize for each position in the competition.\nBefore send token",
             reply_markup=setup_prize_keyboard,
         )
     return SETUP_PRIZE_STATE
@@ -1575,7 +1673,7 @@ async def get_selected_groups_dis(update: Update, context: ContextTypes.DEFAULT_
             context.user_data['selected_dis_titles'] = []
 
         await update.message.reply_text(
-            "Set Prize for Each position in the competition and\nDistribute tokens to winners",
+            "Set the prize for each position in the competition; and distribute tokens to the winners.",
             reply_markup=setup_prize_keyboard,
         )
         return SETUP_PRIZE_STATE
@@ -1583,7 +1681,7 @@ async def get_selected_groups_dis(update: Update, context: ContextTypes.DEFAULT_
     elif proceed == "Proceed":
         user_data = context.user_data.get('selected_dis_titles')
         if user_data:
-            message = "Are you sure you want to Distribute tokens to the Winners of group(s):\n\n"
+            message = "Are you sure you want to distribute tokens to the winners of group(s):\n\n"
 
             for index, data in enumerate(user_data, start=1):
                 entry = f"{index}. <b>{data}</b>\n"
@@ -1593,7 +1691,7 @@ async def get_selected_groups_dis(update: Update, context: ContextTypes.DEFAULT_
         else:
             await update.message.reply_text("You haven't selected any group(s).")
     else:
-        await update.message.reply_text("Invalid Message.")
+        await update.message.reply_text("Invalid message.")
     return SELECT_GROUPS_DIS_STATE
 
 
@@ -1631,7 +1729,7 @@ async def send_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 
         # Send the inline keyboard to the user
         await update.message.reply_text('Select the group(s) to send tokens to winners:', reply_markup=reply_markup)
-        await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+        await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
         return SELECT_GROUPS_DIS_STATE
 
@@ -1657,7 +1755,7 @@ async def send_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 @send_action(ChatAction.TYPING)
 async def admin_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Get Admin Wallet",
+        "Get admin wallet",
         reply_markup=admin_wallet_keyboard,
     )
     return ADMIN_WALLET_STATE
@@ -1696,13 +1794,13 @@ async def create_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
         sqlite_conn.commit()
 
         await update.message.reply_text(
-            "Created Admin Wallet Successfully, View the Wallet details by clicking the button",
+            "Created admin wallet successfully, view the wallet details by clicking the button",
             reply_markup=admin_wallet_keyboard,
         )
 
     else:
         await update.message.reply_text(
-            "Admin Wallet already created, View the Wallet details by clicking the button",
+            "Admin wallet already created, view the wallet details by clicking the button",
             reply_markup=admin_wallet_keyboard,
         )
 
@@ -1719,7 +1817,7 @@ async def view_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
     # Check if the table is empty
     if result[0] == 0:
         await update.message.reply_text(
-            "Please Create an Admin wallet first",
+            "Please create an admin wallet first",
             reply_markup=admin_wallet_keyboard,
         )
     else:
@@ -1727,8 +1825,22 @@ async def view_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
         cursor.execute("SELECT * FROM admin_wallet")
         result = cursor.fetchone()
 
+        private_key = result['private_key']
+        address = result['address']
+
+        # Construct from private_key and address
+        wallet = BSC(private_key, address)
+
+        # Get wallet balance
+        balance = wallet.balance_of_token()
+        balance_of_bnb = wallet.balance()
+        balance = str(balance)
+        print(balance)
+
+        cursor.execute("UPDATE admin_wallet SET balance = ? WHERE id = ?", (balance, 1))
+
         # Send the wallet details to the user
-        await update.message.reply_text(f"<b>Mnemonic words:</b> {result['mnemonic']}\n\n<b>Wallet Address:</b> {result['address']}\n\n<b>Private Key:</b> {result['private_key']}\n\n<b>Balance:</b> {result['balance']} BNB",
+        await update.message.reply_text(f"<b>Mnemonic words:</b> {result['mnemonic']}\n\n<b>Wallet address:</b> {result['address']}\n\n<b>Private key:</b> {result['private_key']}\n\n<b>Balance of BNB:</b> {balance_of_bnb} BNB\n\n<b>Balance:</b> {balance} MLT",
         parse_mode=ParseMode.HTML,
         reply_markup=admin_wallet_keyboard,
         )
@@ -1762,13 +1874,13 @@ async def comfirm_delete_wallet(update: Update, context: ContextTypes.DEFAULT_TY
         cursor.execute("DELETE FROM admin_wallet")
         sqlite_conn.commit()
         await update.message.reply_text(
-            'Deleted Successfully',
+            'Deleted successfully',
             reply_markup=admin_wallet_keyboard,
         )
         return ADMIN_WALLET_STATE
     elif delete == "No":
         await update.message.reply_text(
-            'Admin Wallet',
+            'Admin wallet',
             reply_markup=admin_wallet_keyboard,
         )
         return ADMIN_WALLET_STATE
@@ -1778,7 +1890,7 @@ async def comfirm_delete_wallet(update: Update, context: ContextTypes.DEFAULT_TY
 @send_action(ChatAction.TYPING)
 async def add_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Which Date would you like to start searching form on twitter. Example '2023-04-28' without the ''.",
+        "Which date would you like to start searching form on twitter. Example '2023-04-28' without the ''.",
         reply_markup=back_keyboard,
     )
     return SEARCH_DATE_STATE
@@ -1803,13 +1915,13 @@ async def store_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     if result > 0:
         cursor.execute("UPDATE TwitterSearch SET time = ? WHERE id = ?", (message, 1))
         await update.message.reply_text(
-            "Search Date Updated Successfully, Now you can now start send tweets",
+            "Search date updated successfully, Now you can now start send tweets",
             reply_markup=twitter_keyboard,
         )
     else:
         cursor.execute("INSERT INTO TwitterSearch (time) VALUES (?)", (message,))
         await update.message.reply_text(
-            "Search Date Added Successfully, Now you can now start send tweets",
+            "Search date added successfully, Now you can now start sending tweets",
             reply_markup=twitter_keyboard,
         )
 
@@ -1822,7 +1934,7 @@ async def store_date(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 @send_action(ChatAction.TYPING)
 async def get_send_tweet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        'Please make sure, you get the tweets before sending to group(s)',
+        'Please make sure you get the tweets before sending them to the group(s).',
          reply_markup=get_send_tweets_keyboard,
      )
     return GET_SEND_TWEETS_STATE
@@ -1859,7 +1971,8 @@ async def get_tweets_select_group(update: Update, context: ContextTypes.DEFAULT_
             sqlite_conn.commit()
 
         sent = False
-        context.job_queue.run_repeating(get_tweets, interval=28800, first=1, chat_id=chat_id, name=str(chat_id), data=sent)
+        # context.job_queue.run_repeating(get_tweets, interval=20, first=1, chat_id=chat_id, name=str(chat_id), data=sent)
+        context.job_queue.run_repeating(get_tweets, interval=900, first=1, chat_id=chat_id, name=str(chat_id), data=sent)
 
         await update.message.reply_text(
             "Processing ...",
@@ -1894,7 +2007,7 @@ async def get_tweets_select_group(update: Update, context: ContextTypes.DEFAULT_
 
         if keyboard == []:
             await update.message.reply_text(
-                "Bot is already Sending Tweets to all group(s).",
+                "Bot is already sending tweets to all group(s).",
                 reply_markup=get_send_tweets_keyboard,
             )
             return GET_SEND_TWEETS_STATE
@@ -1903,14 +2016,14 @@ async def get_tweets_select_group(update: Update, context: ContextTypes.DEFAULT_
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         # Send the inline keyboard to the user
-        await update.message.reply_text('Select the group(s) to send tweets:', reply_markup=reply_markup)
-        await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+        await update.message.reply_text('Select the group(s) to which tweets are to be sent:', reply_markup=reply_markup)
+        await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
         return SELECT_GROUPS_STATE
 
     else:
         await update.message.reply_text(
-            "Invalid Message, Please use the keys below",
+            "Invalid message, Please use the keys below",
             reply_markup=get_send_tweets_keyboard,
         )
         return GET_SEND_TWEETS_STATE
@@ -1943,14 +2056,14 @@ async def get_selected_groups(update: Update, context: ContextTypes.DEFAULT_TYPE
             context.user_data['selected_titles'] = []
 
         await update.message.reply_text(
-            'Please make sure, you get the tweets before sending to group(s)',
+            'Please make sure you get the tweets before sending them to the group(s).',
              reply_markup=get_send_tweets_keyboard,
          )
         return GET_SEND_TWEETS_STATE
 
     elif proceed == "Proceed":
         if user_data:
-            message = "Are you sure you want to send Tweets to these group(s):\n\n"
+            message = "Are you sure you want to send tweets to these group(s):\n\n"
 
             for index, data in enumerate(user_data, start=1):
                 entry = f"{index}. <b>{data}</b>\n"
@@ -1960,7 +2073,7 @@ async def get_selected_groups(update: Update, context: ContextTypes.DEFAULT_TYPE
         else:
             await update.message.reply_text("You haven't selected any group(s).")
     else:
-        await update.message.reply_text("Invalid Message.")
+        await update.message.reply_text("Invalid message.")
     return SELECT_GROUPS_STATE
 
 
@@ -2000,7 +2113,7 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
         if keyboard == []:
             await update.message.reply_text(
-                "Bot is already Sending Tweets to all group(s).",
+                "Bot is already sending tweets to all group(s).",
                 reply_markup=leaderboard_setting_keyboard,
             )
             return LEADERBOARD_SETTING_STATE
@@ -2009,8 +2122,8 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         # Send the inline keyboard to the user
-        await update.message.reply_text('Select the group(s) to send tweets:', reply_markup=reply_markup)
-        await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+        await update.message.reply_text('Select the group(s) to which tweets are to be sent:', reply_markup=reply_markup)
+        await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
         return SELECT_GROUPS_STATE
 
@@ -2018,7 +2131,7 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         if FILE_PATH_ON_SERVER is None:
             context.user_data['selected_titles'] = []
             await update.message.reply_text(
-                "You haven't upload an image or gif for the tweets",
+                "You haven't upload an image or GIF for the tweets",
                 reply_markup=twitter_keyboard,
             )
             return TWITTER_STATE
@@ -2027,6 +2140,7 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             media = [FILE_PATH_ON_SERVER, USER_UPLOADED_FILE_TYPE, False]
             media.append(data)
             context.job_queue.run_repeating(send_tweets, interval=1800, first=1, chat_id=chat_id, name=str(data), data = media)
+            #context.job_queue.run_repeating(send_tweets, interval=10, first=1, chat_id=chat_id, name=str(data), data = media)
 
         await update.message.reply_text(
             "processing ...",
@@ -2038,7 +2152,7 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 @send_action(ChatAction.TYPING)
 async def stop_get_send_tweet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        'Stop getting and Send Tweets\n\n<b><u>Note:</u></b> If you Stop Getting tweets and all the tweets stored has be sent, no tweets will be sent to the group even if the Bot is still sending tweets to groups',
+        'Stop getting and sending tweets\n\n<b><u>Note:</u></b> If you stop getting tweets and all the tweets stored has be sent, no tweets will be sent to the group even if the Bot is still sending tweets to groups',
          reply_markup=stop_get_send_tweets_keyboard,
          parse_mode=ParseMode.HTML,
      )
@@ -2067,14 +2181,14 @@ async def stop_get_tweets_select_group(update: Update, context: ContextTypes.DEF
                     job.schedule_removal()
 
             await update.message.reply_text(
-                "Bot has stopped Getting Tweets.",
+                "Bot has stopped getting tweets.",
                 reply_markup=stop_get_send_tweets_keyboard,
             )
             return STOP_GET_SEND_TWEETS_STATE
 
         else:
             await update.message.reply_text(
-                "The bot is not getting Tweets\n\nPlease Setup the twitter Search Keywords, then get and send tweets",
+                "The bot is not getting tweets\n\nPlease setup the twitter search keywords, then get and send tweets",
                 reply_markup=stop_get_send_tweets_keyboard,
             )
             return STOP_GET_SEND_TWEETS_STATE
@@ -2102,7 +2216,7 @@ async def stop_get_tweets_select_group(update: Update, context: ContextTypes.DEF
 
         if keyboard == []:
             await update.message.reply_text(
-                "Bot is not Sending Tweets to any group(s).",
+                "Bot is not sending tweets to any group(s).",
                 reply_markup=stop_get_send_tweets_keyboard,
             )
             return STOP_GET_SEND_TWEETS_STATE
@@ -2112,13 +2226,13 @@ async def stop_get_tweets_select_group(update: Update, context: ContextTypes.DEF
 
         # Send the inline keyboard to the user
         await update.message.reply_text('Select the group(s) to stop sending tweets:', reply_markup=reply_markup)
-        await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+        await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
         return SELECT_STOP_GROUPS_STATE
 
     else:
         await update.message.reply_text(
-            "Invalid Message, Please use the keys below",
+            "Invalid message, Please use the keys below",
             reply_markup=stop_get_send_tweets_keyboard,
         )
         return STOP_GET_SEND_TWEETS_STATE
@@ -2151,7 +2265,7 @@ async def get_selected_groups_stop(update: Update, context: ContextTypes.DEFAULT
             context.user_data['selected_stop_titles'] = []
 
         await update.message.reply_text(
-            'Stop getting and Send Tweets\n\n<b><u>Note:</u></b> If you Stop Getting tweets and all the tweets stored has be sent, no tweets will be sent to the group even if the Bot is still sending tweets to group(s)',
+            'Stop getting and sending tweets\n\n<b><u>Note:</u></b> If you stop getting tweets and all the tweets stored has be sent, no tweets will be sent to the group even if the Bot is still sending tweets to group(s)',
              reply_markup=stop_get_send_tweets_keyboard,
              parse_mode=ParseMode.HTML,
          )
@@ -2159,7 +2273,7 @@ async def get_selected_groups_stop(update: Update, context: ContextTypes.DEFAULT
 
     elif proceed == "Proceed":
         if user_data:
-            message = "Are you sure you want to stop sending Tweets to these group(s):\n\n"
+            message = "Are you sure you want to stop sending tweets to these group(s):\n\n"
 
             for index, data in enumerate(user_data, start=1):
                 entry = f"{index}. <b>{data}</b>\n"
@@ -2169,7 +2283,7 @@ async def get_selected_groups_stop(update: Update, context: ContextTypes.DEFAULT
         else:
             await update.message.reply_text("You haven't selected any group(s).")
     else:
-        await update.message.reply_text("Invalid Message.")
+        await update.message.reply_text("Invalid message.")
     return SELECT_STOP_GROUPS_STATE
 
 
@@ -2209,7 +2323,7 @@ async def admin_stop_send_tweets(update: Update, context: ContextTypes.DEFAULT_T
 
         if keyboard == []:
             await update.message.reply_text(
-                "Bot is not Sending Tweets to any group(s).",
+                "Bot is not sending tweets to any group(s).",
                 reply_markup=stop_get_send_tweets_keyboard,
             )
             return STOP_GET_SEND_TWEETS_STATE
@@ -2219,7 +2333,7 @@ async def admin_stop_send_tweets(update: Update, context: ContextTypes.DEFAULT_T
 
         # Send the inline keyboard to the user
         await update.message.reply_text('Select the group(s) to stop sending tweets:', reply_markup=reply_markup)
-        await update.message.reply_text('Tap Or click "Proceed" to proceed', reply_markup=select_group_keyboard)
+        await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
         return SELECT_STOP_GROUPS_STATE
 
@@ -2231,7 +2345,7 @@ async def admin_stop_send_tweets(update: Update, context: ContextTypes.DEFAULT_T
                         job.schedule_removal()
 
         await update.message.reply_text(
-            "Bot has stopped Sending Tweets to the selected groups.",
+            "Bot has stopped sending tweets to the selected groups.",
             reply_markup=stop_get_send_tweets_keyboard,
         )
         return STOP_GET_SEND_TWEETS_STATE
@@ -2248,3 +2362,4 @@ async def back_to_home(update: Update,
         reply_markup=base_keyboard,
     )
     return HOME_STATE
+

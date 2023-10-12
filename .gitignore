@@ -2,3 +2,4 @@ pyvenv.cfg
 MICL.db
 .env
 conversation_states
+nohup.out

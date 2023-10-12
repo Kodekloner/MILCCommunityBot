@@ -224,14 +224,19 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
     user_scores = {}
 
     if results:
+        current_time = datetime.utcnow()
+
+        # Subtract one day from the current timestamp
+        previous_day = current_time - timedelta(days=1)
         for result in results:
-            created_time = result['created_at']
+            sent_time = result['sent_at']
             sent = result['sent']
-            started_time = job.data[0]
 
-            created_time = datetime.strptime(created_time, '%Y-%m-%dT%H:%M:%S.%fZ')
+            sent_time = datetime.strptime(sent_time, '%Y-%m-%d %H:%M:%S.%f')
+            print(sent_time)
+            print(previous_day)
 
-            if created_time >= started_time and sent == 1:
+            if sent_time >= previous_day and sent == 1:
                 tweet_id = result['tw_id']
                 headers = {'authorization': f'Bearer {bearer_token}'}
 
@@ -376,13 +381,13 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                            (username, tweets, replies, likes, retweets, total, username))
             sqlite_conn.commit()
 
-        if not job.data[1]:
+        if not job.data:
             await context.bot.send_message(job.chat_id,
                 "<b>Competition Started Successfully\n</b>"
                 "Display the leaderboard to groups.",
                 parse_mode=ParseMode.HTML,
             )
-            job.data[1] = True
+            job.data = True
 
         message = "<b>Competition Scores calculated Successfully\n</b>"
         if (
@@ -407,7 +412,7 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
     cursor = sqlite_conn.cursor()
     if not job.data[2]:
         await context.bot.send_message(job.chat_id,
-            "Successful, the selected group will start receiving tweets messages",
+            "Success! The selected group will receive tweets.",
         )
         job.data[2] = True
     cursor.execute("SELECT DISTINCT chat_id FROM chat_stats WHERE type LIKE '%group%' AND title = ?;", (job.data[3],),)
@@ -426,6 +431,9 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
         if not rows:
             return
 
+        sent_time = datetime.utcnow()
+        print(sent_time)
+
         influencers = ""
         for index, row in enumerate(rows, start=1):
             tweet_status_id = row["tw_id"]
@@ -442,12 +450,12 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
 
             cursor.execute(
                 """
-                UPDATE tweets SET sent=? WHERE id=?;
+                UPDATE tweets SET sent=?, sent_at=? WHERE id=?;
                 """,
-                (True, row['id']),
+                (True, sent_time, row['id']),
             )
 
-        message = f"🚀 Let's Raid these {last_index} new tweets\n\n" +  influencers + "\n\n📢 To spread the word faster\n\nJust click on the influencers above, you will be directed to their tweet\n"
+        message = f"🚀 Let's raid the following Tweet(s) 🚀\n\n" +  influencers + "\n\n‼️ To spread the word faster just click on the link and you will be directed to the Tweet ‼️\n"
 
         if job.data[1] == "Photo":
             # await context.bot.send_photo(result['chat_id'], photo=image_url, caption=tweet_text)
@@ -528,3 +536,4 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
             text=message,
             parse_mode=ParseMode.HTML,
         )
+

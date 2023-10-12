@@ -122,6 +122,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
             ],
             ADD_USER_WALLET_STATE: [
                 MessageHandler(filters.Regex(f"^{ADD_ADDRESS_KEY}$"),
@@ -134,6 +135,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
             ],
             ADD_USER_WALLET_GROUP_STATE: [
                 MessageHandler(filters.Regex(f"^{ADD_ADDRESS_KEY}$"),
@@ -152,6 +154,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
             ],
             INSERT_USER_GROUP_STATE: [
                 CallbackQueryHandler(wallet.button_callback_user_group),
@@ -171,12 +174,14 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
             ],
             VIEW_USER_WALLET_STATE: [
                 CommandHandler("admin", admin.admin),
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{SHOW_ADDRESS_KEY}$"),
                                wallet.view_address),
                 MessageHandler(filters.Regex(f"^{SHOW_TWITTER_USER_KEY}$"),
@@ -189,6 +194,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{SHOW_ADDRESS_KEY}$"),
                                wallet.view_address),
                 MessageHandler(filters.Regex(f"^{SHOW_TWITTER_USER_KEY}$"),
@@ -203,6 +209,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{SHOW_ADDRESS_KEY}$"),
                                wallet.view_address),
                 MessageHandler(filters.Regex(f"^{ADD_TWITTER_USER_KEY}$"),
@@ -215,6 +222,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{SHOW_ADDRESS_KEY}$"),
                                wallet.view_address),
                 MessageHandler(filters.Regex(f"^{ADD_TWITTER_USER_KEY}$"),
@@ -229,6 +237,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{ADD_ADDRESS_KEY}$"),
                                wallet.add_address),
                 MessageHandler(filters.Regex(f"^{SHOW_TWITTER_USER_KEY}$"),
@@ -241,6 +250,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{ADD_ADDRESS_KEY}$"),
                                wallet.add_address),
                 MessageHandler(filters.Regex(f"^{SHOW_TWITTER_USER_KEY}$"),
@@ -255,6 +265,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, wallet.store_address)
             ],
             STORE_USERNAME_STATE: [
@@ -262,6 +273,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, wallet.store_username)
             ],
             OPT_CHANGE_ADDRESS_STATE: [
@@ -269,6 +281,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, wallet.opt_change_address)
             ],
             OPT_CHANGE_USERNAME_STATE: [
@@ -276,6 +289,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, wallet.opt_change_username)
             ],
             CHANGE_ADDRESS_STATE: [
@@ -283,6 +297,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, wallet.store_change_address)
             ],
             CHANGE_USERNAME_STATE: [
@@ -290,6 +305,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, wallet.store_change_username)
             ],
             ADMIN_STATE: [
@@ -297,6 +313,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{COMPETITION_KEY}$"),
                                admin.competition),
                 MessageHandler(filters.Regex(f"^{BACK_TO_HOME_KEY}$"),
@@ -315,6 +332,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{SEARCH_KEY}$"),
                                admin.search),
                 MessageHandler(
@@ -339,6 +357,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.ALL, admin.store_photo)
             ],
             SEARCH_STATE: [
@@ -346,6 +365,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.store_search)
             ],
             GET_SEND_TWEETS_STATE: [
@@ -353,6 +373,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.get_tweets_select_group)
             ],
             SELECT_GROUPS_STATE: [
@@ -361,6 +382,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.get_selected_groups),
             ],
             SEND_TWEETS_STATE: [
@@ -368,6 +390,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.admin_send_tweets)
             ],
             STOP_GET_SEND_TWEETS_STATE: [
@@ -375,6 +398,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.stop_get_tweets_select_group)
             ],
             SELECT_STOP_GROUPS_STATE: [
@@ -382,6 +406,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 CallbackQueryHandler(admin.button_callback_stop),
                 MessageHandler(filters.TEXT, admin.get_selected_groups_stop),
             ],
@@ -390,6 +415,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.admin_stop_send_tweets)
             ],
             COMPETITION_STATE: [
@@ -397,6 +423,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{SETUP_POINTS_KEY}$"),
                                admin.setup_points),
                 MessageHandler(filters.Regex(f"^{START_COMPETITION_KEY}$"),
@@ -405,7 +432,7 @@ def base_conversation_handler():
                                admin.stop_comp),
                 MessageHandler(filters.Regex(f"^{LEADERBOARD_KEY}$"),
                                admin.comp_leaderboard),
-                MessageHandler(filters.Regex(f"^{PARTICIPANT_KEY}$"),
+                MessageHandler(filters.Regex(f"^Participant\(s\) 👨‍💼$"),
                                admin.comp_participant),
                 MessageHandler(
                     filters.Regex(f"^{DISTRIBUTE_TOKEN_KEY}$"),
@@ -421,6 +448,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{SET_POINTS_KEY}$"),
                                admin.set_point),
                 MessageHandler(filters.Regex(f"^{CHANGE_POINTS_KEY}$"),
@@ -433,6 +461,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.insertpoint)
             ],
             UPDATE_POINT_STATE: [
@@ -440,6 +469,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.updatepoint)
             ],
             LEADERBOARD_SETTING_STATE: [
@@ -447,6 +477,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{SET_TIME_LEADERBOARD_KEY}$"),
                                admin.leaderboard_time_settings),
                 MessageHandler(filters.Regex(f"^{DISPLAY_BOARD_KEY}$"),
@@ -461,6 +492,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 CallbackQueryHandler(admin.button_callback_com),
                 MessageHandler(filters.TEXT, admin.get_selected_groups_com),
             ],
@@ -469,6 +501,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.display_leaderboard)
             ],
             SELECT_HIDE_GROUPS_COMPETITION_STATE: [
@@ -476,6 +509,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 CallbackQueryHandler(admin.button_callback_hide),
                 MessageHandler(filters.TEXT, admin.get_selected_hide_groups_com),
             ],
@@ -484,6 +518,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.hide_leaderboard)
             ],
             TIME_INTERVAL_STATE: [
@@ -491,6 +526,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.set_time_interval)
             ],
             STORE_DISPLAY_BOARD_STATE: [
@@ -498,6 +534,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.store_time_interval)
             ],
             SETUP_PRIZE_STATE: [
@@ -505,6 +542,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{SET_PRIZE_KEY}$"),
                                admin.set_prize),
                 MessageHandler(filters.Regex(f"^{CHANGE_PRIZE_KEY}$"),
@@ -519,6 +557,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.insertprize)
             ],
             UPDATE_PRIZE_STATE: [
@@ -526,6 +565,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.updateprize)
             ],
             SELECT_GROUPS_DIS_STATE: [
@@ -533,6 +573,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 CallbackQueryHandler(admin.button_callback_dis),
                 MessageHandler(filters.TEXT, admin.get_selected_groups_dis),
             ],
@@ -541,6 +582,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.send_token)
             ],
             PARTICIPANT_STATE: [
@@ -548,9 +590,10 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
-                MessageHandler(filters.Regex(f"^{VIEW_PARTICIPANT_KEY}$"),
+                CommandHandler("reset", admin.reset),
+                MessageHandler(filters.Regex(f"^View Participant\(s\)$"),
                                admin.view_participant),
-                MessageHandler(filters.Regex(f"^{BAN_PARTICIPANT_KEY}$"),
+                MessageHandler(filters.Regex(f"^Ban Participant\(s\)$"),
                                admin.ban_participant),
                 MessageHandler(
                     filters.Regex(f"^{BACK_KEY}$"),
@@ -562,6 +605,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.comfirm_ban_participant)
             ],
             COMFIRM_BAN_PARTICIPANT_STATE: [
@@ -569,6 +613,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.delete_participant)
             ],
             ADMIN_WALLET_STATE: [
@@ -576,6 +621,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{ADMIN_CREAT_WALLET_KEY}$"),
                                admin.create_wallet),
                 MessageHandler(filters.Regex(f"^{VIEW_WALLET_KEY}$"),
@@ -592,6 +638,7 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.comfirm_delete_wallet)
             ],
             ADD_ADMIN_STATE: [
@@ -599,12 +646,13 @@ def base_conversation_handler():
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.TEXT, admin.add_admin_to_env)],
         },
         fallbacks=[
             MessageHandler(filters.ALL, admin.handle_invalid_message)
         ],
         name="base_conversation_handler",
-        persistent=False,
+        persistent=True,
     )
     return conversation_handler
