@@ -1,3 +1,4 @@
+import time
 import numpy as np
 
 # from telegram import Update
@@ -82,7 +83,7 @@ async def distribute_token_winners(group, chat_id, context: ContextTypes.DEFAULT
                                (participant['username'], participant['address'], participant['total'], token, f"Transaction failed: {message}"))
                 sqlite_conn.commit()
 
-            
+            time.sleep(60)
 
     reply_message = "<b>Transaction Status</b>\n\n" + reply_message
 

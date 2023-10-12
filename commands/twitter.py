@@ -235,7 +235,7 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
             print(sent_time)
             print(previous_day)
 
-            if sent_time >= previous_day and sent != "":
+            if sent_time >= previous_day and sent == 1:
                 tweet_id = result['tw_id']
                 headers = {'authorization': f'Bearer {bearer_token}'}
 
@@ -411,7 +411,7 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
     cursor = sqlite_conn.cursor()
     if not job.data[2]:
         await context.bot.send_message(job.chat_id,
-            "Successful, the selected group will start receiving tweets messages",
+            "Success! The selected group will receive tweets.",
         )
         job.data[2] = True
     cursor.execute("SELECT DISTINCT chat_id FROM chat_stats WHERE type LIKE '%group%' AND title = ?;", (job.data[3],),)
@@ -422,19 +422,6 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
         tweets_rows = cursor.fetchall()
 
         if not tweets_rows:
-            return
-
-        sending_to = []
-
-        for row in tweets_rows:
-            sent_groups = [group.strip() for group in row['sent'].split(',')]
-            if job.data[3] not in sent_groups:
-                sending_to.append(row)
-
-            if len(sending_to) == 5:
-                break
-
-        if sending_to == []:
             return
 
         sent_time = datetime.utcnow()
@@ -457,25 +444,12 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
             # Check if telegram_groups field is already populated
             cursor.execute(
                 """
-                SELECT sent FROM `tweets` WHERE id = ?;
-                """,
-                (row['id'],),
-            )
-            group_result = cursor.fetchone()
-
-            if group_result and group_result[0]:  # Check if the field is not empty
-                sent_groups = f"{group_result[0]},{job.data[3]}"
-            else:
-                sent_groups = job.data[3]
-
-            cursor.execute(
-                """
                 UPDATE tweets SET sent=?, sent_at=? WHERE id=?;
                 """,
-                (sent_groups, sent_time, row['id']),
+                (True, sent_time, row['id']),
             )
 
-        message = f"🚀 Let's Raid these {last_index} new tweets\n\n" +  influencers + "\n\n📢 To spread the word faster\n\nJust click on the influencers above, you will be directed to their tweet\n"
+        message = f"🚀 Let's raid the following Tweet(s) 🚀\n\n" +  influencers + "\n\n‼️ To spread the word faster just click on the link and you will be directed to the Tweet ‼️\n"
 
         if job.data[1] == "Photo":
             # await context.bot.send_photo(result['chat_id'], photo=image_url, caption=tweet_text)

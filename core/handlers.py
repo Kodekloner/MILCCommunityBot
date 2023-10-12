@@ -653,6 +653,6 @@ def base_conversation_handler():
             MessageHandler(filters.ALL, admin.handle_invalid_message)
         ],
         name="base_conversation_handler",
-        persistent=False,
+        persistent=True,
     )
     return conversation_handler

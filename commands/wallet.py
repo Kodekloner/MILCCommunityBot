@@ -69,15 +69,14 @@ def verify_bsc_wallet_address(address):
 @send_action(ChatAction.TYPING)
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "MILC Community Bot allows you to earn rewards by promoting and spreading the word about the MILC project on Twitter. To make this work, the Bot has a Competition function and integrated Reward Distributions.\n"
+        "MILC Community Bot allows you to earn rewards by promoting and spreading the word about the MILC project on Twitter. To make this work, the Bot has a competition function and integrated reward distributions.\n"
         "\n"
         "**What's the point of it?**\n"
         "\n"
         "With your help and the incentives that come with it, we want to increase the visibility and reach of the MILC project.\n"
         "\n"
-        "You Can also take part in the competition to get rewarded\n\n"
-        f"Tap <b>{USER_WALLET_KEY}</b> and follow the instructions\n"
-        "follow through with the messages",
+        "You can also take part in the competition to get rewarded.\n\n"
+        f"Tap <b>{USER_WALLET_KEY}</b> and follow the instructions.",
         reply_markup=base_keyboard,
         parse_mode=ParseMode.HTML,
     )
@@ -99,13 +98,13 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
                 return VIEW_USER_WALLET_STATE
             elif result['twitter_username'] is None or result['twitter_username'] == "" :
                 await update.message.reply_text(
-                    "Add your Twitter Username",
+                    "Type your Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
                     reply_markup=add_user_view_addr_keyboard,
                 )
                 return ADD_USERNAME_VIEW_ADDR_STATE
             else:
                 await update.message.reply_text(
-                    "Please Add your BSC Address",
+                    "Please add your BSC address",
                     reply_markup=view_user_add_addr_keyboard,
                 )
                 return VIEW_USERNAME_ADD_ADDR_STATE
@@ -131,13 +130,13 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
             return VIEW_USER_WALLET_DM_STATE
         elif result['twitter_username'] is None or result['twitter_username'] == "" :
             await update.message.reply_text(
-                "Add your Twitter Username",
+                "Type your Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
                 reply_markup=add_user_view_addr_group_keyboard,
             )
             return ADD_USERNAME_VIEW_ADDR_DM_STATE
         else:
             await update.message.reply_text(
-                "Please Add your BSC Address",
+                "Please add your BSC address",
                 reply_markup=view_user_add_addr_group_keyboard,
             )
             return VIEW_USERNAME_ADD_ADDR_DM_STATE
@@ -205,7 +204,7 @@ async def user_select_group(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Send the inline keyboard to the user
-    await update.message.reply_text('Select the group you are in because the leaderboard will only be displayed in Group where you recieve the tweets:', reply_markup=reply_markup)
+    await update.message.reply_text('Select the group you are part of as the leaderboard will only be displayed in the group where you receive the tweets:', reply_markup=reply_markup)
     return INSERT_USER_GROUP_STATE
 
 @send_action(ChatAction.TYPING)
@@ -226,13 +225,13 @@ async def button_callback_user_group(update: Update, context: ContextTypes.DEFAU
     if not result:
         cursor.execute("INSERT INTO user_wallet_twitter (userid, chat_id, username, telegram_group, ban) VALUES (?,?,?,?,?)", (user_id, chat_id, telegram_username, selected_user_title, ban))
         sqlite_conn.commit()
-        query.edit_message_text(text=f"Successfully, Selected your group\n\nGroup name: {selected_user_title}")
+        query.edit_message_text(text=f"Successfully selected your group\n\nGroup name: {selected_user_title}")
         return ADD_USER_WALLET_GROUP_STATE
 
     cursor.execute("UPDATE user_wallet_twitter SET telegram_group = ? WHERE userid = ?", (selected_user_title, user_id))
     sqlite_conn.commit()
 
-    await query.edit_message_text(text=f"Successfully Updated your group\n\nGroup name: {selected_user_title}")
+    await query.edit_message_text(text=f"Successfully updated your group\n\nGroup name: {selected_user_title}")
     return ADD_USER_WALLET_GROUP_STATE
 
 @send_action(ChatAction.TYPING)
@@ -262,13 +261,13 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
                     return VIEW_USER_WALLET_STATE
                 elif result['twitter_username'] is None or result['twitter_username'] == "" :
                     await update.message.reply_text(
-                        "Add your Twitter Username",
+                        "Type your Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
                         reply_markup=add_user_view_addr_keyboard,
                     )
                     return ADD_USERNAME_VIEW_ADDR_STATE
                 else:
                     await update.message.reply_text(
-                        "Please Add your BSC Address",
+                        "Please add your BSC address",
                         reply_markup=view_user_add_addr_keyboard,
                     )
                     return VIEW_USERNAME_ADD_ADDR_STATE
@@ -294,13 +293,13 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
                 return VIEW_USER_WALLET_DM_STATE
             elif result['twitter_username'] is None or result['twitter_username'] == "" :
                 await update.message.reply_text(
-                    "Add your Twitter Username",
+                    "Type your Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
                     reply_markup=add_user_view_addr_group_keyboard,
                 )
                 return ADD_USERNAME_VIEW_ADDR_DM_STATE
             else:
                 await update.message.reply_text(
-                    "Please Add your BSC Address",
+                    "Please add your BSC address",
                     reply_markup=view_user_add_addr_group_keyboard,
                 )
                 return VIEW_USERNAME_ADD_ADDR_DM_STATE
@@ -324,7 +323,7 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
             cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (address, user_id))
             sqlite_conn.commit()
             await update.message.reply_text(
-                "Congratulation!, You can Now Participate in the Competition ",
+                "Congratulation!, you can now participate in the competition ",
                 reply_markup=base_keyboard,
             )
             return HOME_STATE
@@ -344,13 +343,13 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
 
             sqlite_conn.commit()
             await update.message.reply_text(
-                "Congratulation!, Your Wallet address has be saved successfully ✅, Enter Your Twitter username Next",
+                "Congratulation!, your wallet address has be saved successfully ✅, enter your twitter username next",
                 reply_markup=back_keyboard,
             )
             return STORE_USERNAME_STATE
     else:
         await update.message.reply_text(
-            "Invalid Address ❌, Please Enter a Valid BSC Address",
+            "Invalid address ❌, Please enter a valid BSC address",
             reply_markup=back_keyboard,
         )
         return STORE_ADDRESS_STATE
@@ -358,7 +357,7 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
 @send_action(ChatAction.TYPING)
 async def add_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     await update.message.reply_text(
-        "Please add your Twitter Username",
+        "Register your Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
         reply_markup=back_keyboard,
     )
     return STORE_USERNAME_STATE
@@ -382,13 +381,13 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                     return VIEW_USER_WALLET_STATE
                 elif result['twitter_username'] is None or result['twitter_username'] == "" :
                     await update.message.reply_text(
-                        "Add your Twitter Username",
+                        "Type your Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
                         reply_markup=add_user_view_addr_keyboard,
                     )
                     return ADD_USERNAME_VIEW_ADDR_STATE
                 else:
                     await update.message.reply_text(
-                        "Please Add your BSC Address",
+                        "Please add your BSC address",
                         reply_markup=view_user_add_addr_keyboard,
                     )
                     return VIEW_USERNAME_ADD_ADDR_STATE
@@ -402,7 +401,7 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if result:
             if result['twitter_username'] is None or result['twitter_username'] == "" and result['address'] is None or result['address'] == "" :
                 await update.message.reply_text(
-                    "Please add your Twitter username and a BSC wallet address to participate in the competition\n\nYou can change your selected group",
+                    "Please add your Twitter username and a BSC wallet address to participate in the competition.\n\nYou can change your selected group",
                     reply_markup=add_user_wallet_group_keyboard,
                 )
                 return ADD_USER_WALLET_GROUP_STATE
@@ -414,19 +413,19 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 return VIEW_USER_WALLET_DM_STATE
             elif result['twitter_username'] is None or result['twitter_username'] == "" :
                 await update.message.reply_text(
-                    "Add your Twitter Username",
+                    "Type your Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
                     reply_markup=add_user_view_addr_group_keyboard,
                 )
                 return ADD_USERNAME_VIEW_ADDR_DM_STATE
             else:
                 await update.message.reply_text(
-                    "Please Add your BSC Address",
+                    "Please add your BSC address",
                     reply_markup=view_user_add_addr_group_keyboard,
                 )
                 return VIEW_USERNAME_ADD_ADDR_DM_STATE
 
         await update.message.reply_text(
-            "Please add your Twitter username and a BSC wallet address to participate in the competition\n\nYou also need to select the group the you recieves the tweets for the competition.",
+            "Please add your Twitter username and a BSC wallet address to participate in the competition.\n\nYou also need to select the group the you recieves the tweets for the competition.",
             reply_markup=add_user_wallet_group_keyboard,
         )
         return ADD_USER_WALLET_GROUP_STATE
@@ -443,7 +442,7 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             # if result['address'] is not None and result['address'] != None :
             cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (username, user_id))
             await update.message.reply_text(
-                "Congratulation!, You can Now Participate in the Competition ",
+                "Congratulation!, you can now participate in the competition ",
                 reply_markup=base_keyboard,
             )
             return HOME_STATE
@@ -461,7 +460,7 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username, chat_id, username, ban) VALUES (?,?,?,?,?)", (user_id, username, chat_id, telegram_username, ban))
 
             await update.message.reply_text(
-                "Congratulation!, your Twitter username was added Successfully. Add your Address if you haven't",
+                "Congratulation!, your Twitter username was added successfully. Add your address if you haven't",
                 reply_markup=back_keyboard,
             )
             return STORE_ADDRESS_STATE
@@ -473,7 +472,7 @@ async def view_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
     cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
     result = cursor.fetchone()
     await update.message.reply_text(
-        f"Your Wallet Address is {result['address']}",
+        f"Your wallet address is {result['address']}",
         reply_markup=change_add_keyboard,
     )
     return OPT_CHANGE_ADDRESS_STATE
@@ -490,7 +489,7 @@ async def opt_change_address(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if chat.type != Chat.PRIVATE:
             if result['twitter_username'] == "" or result['twitter_username'] is None:
                 await update.message.reply_text(
-                    "Add your Twitter Username",
+                    "Type your Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
                     reply_markup=add_user_view_addr_keyboard,
                 )
                 return ADD_USERNAME_VIEW_ADDR_STATE
@@ -503,7 +502,7 @@ async def opt_change_address(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
         if result['twitter_username'] == "" or result['twitter_username'] is None:
             await update.message.reply_text(
-                "Add your Twitter Username",
+                "Type your Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
                 reply_markup=add_user_view_addr_group_keyboard,
             )
             return ADD_USERNAME_VIEW_ADDR_DM_STATE
@@ -516,13 +515,13 @@ async def opt_change_address(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     elif message == "Change Address 💲":
         await update.message.reply_text(
-            "Type Your new BSC Address",
+            "Type your new BSC address",
             reply_markup=back_keyboard,
         )
         return CHANGE_ADDRESS_STATE
     else:
         await update.message.reply_text(
-            f"Invalid Command",
+            f"Invalid command",
             reply_markup=change_add_keyboard,
         )
         return OPT_CHANGE_ADDRESS_STATE
@@ -551,7 +550,7 @@ async def store_change_address(update: Update, context: ContextTypes.DEFAULT_TYP
                 cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (message, user_id))
                 sqlite_conn.commit()
                 await update.message.reply_text(
-                    "Congratulation!, You have Successfully changed your BSC Wallet Address. Add your Twitter Username if you haven't",
+                    "Congratulation!, you have successfully changed your BSC wallet address. Add your Twitter Username if you haven't",
                     reply_markup=add_user_view_addr_keyboard,
                 )
                 return ADD_USERNAME_VIEW_ADDR_STATE
@@ -559,7 +558,7 @@ async def store_change_address(update: Update, context: ContextTypes.DEFAULT_TYP
                 cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (message, user_id))
                 sqlite_conn.commit()
                 await update.message.reply_text(
-                    "Congratulation!, You have Successfully changed your BSC Wallet Address. Be active on Twitter to get Free MLT tokens",
+                    "Congratulation!, you have successfully changed your BSC wallet address. Be active on Twitter to get free MLT tokens",
                     reply_markup=view_user_wallet_keyboard,
                 )
                 return VIEW_USER_WALLET_STATE
@@ -568,7 +567,7 @@ async def store_change_address(update: Update, context: ContextTypes.DEFAULT_TYP
             cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (message, user_id))
             sqlite_conn.commit()
             await update.message.reply_text(
-                "Congratulation!, You have Successfully changed your BSC Wallet Address. Add your Twitter Username if you haven't",
+                "Congratulation!, you have successfully changed your BSC wallet address. Add your Twitter username if you haven't",
                 reply_markup=add_user_view_addr_group_keyboard,
             )
             return ADD_USERNAME_VIEW_ADDR_DM_STATE
@@ -576,13 +575,13 @@ async def store_change_address(update: Update, context: ContextTypes.DEFAULT_TYP
             cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (message, user_id))
             sqlite_conn.commit()
             await update.message.reply_text(
-                "Congratulation!, You have Successfully changed your BSC Wallet Address. Be active on Twitter to get Free MLT tokens",
+                "Congratulation!, you have successfully changed your BSC wallet address. Be active on Twitter to get free MLT tokens",
                 reply_markup=view_user_wallet_group_keyboard,
             )
             return VIEW_USER_WALLET_DM_STATE
     else:
         await update.message.reply_text(
-            "Invalid Address ❌, Please Enter a Valid BSC Address",
+            "Invalid address ❌, please enter a valid BSC Address",
             reply_markup=back_keyboard,
         )
         return CHANGE_ADDRESS_STATE
@@ -611,7 +610,7 @@ async def opt_change_username(update: Update, context: ContextTypes.DEFAULT_TYPE
         if chat.type != Chat.PRIVATE:
             if result['address'] == "" or result['address'] is None:
                 await update.message.reply_text(
-                    "You have not Added your BSC wallet Address",
+                    "You have not added your BSC wallet address",
                     reply_markup=view_user_add_addr_keyboard,
                 )
                 return VIEW_USERNAME_ADD_ADDR_STATE
@@ -624,7 +623,7 @@ async def opt_change_username(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         if result['address'] == "" or result['address'] is None:
             await update.message.reply_text(
-                "You have not Added your BSC wallet Address",
+                "You have not added your BSC wallet address",
                 reply_markup=view_user_add_addr_group_keyboard,
             )
             return VIEW_USERNAME_ADD_ADDR_DM_STATE
@@ -637,13 +636,13 @@ async def opt_change_username(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     elif message == "Change Twitter username 👨‍💼":
         await update.message.reply_text(
-            "Type Your new Username",
+            "Type your new Twitter username - without @ and case sensitive - for example: weezel87 or nvaiotelli",
             reply_markup=back_keyboard,
         )
         return CHANGE_USERNAME_STATE
     else:
         await update.message.reply_text(
-            f"Invalid Command {message}",
+            f"Invalid command {message}",
             reply_markup=change_username_keyboard,
         )
         return OPT_CHANGE_USERNAME_STATE
@@ -673,7 +672,7 @@ async def store_change_username(update: Update, context: ContextTypes.DEFAULT_TY
                 cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (message, user_id))
                 sqlite_conn.commit()
                 await update.message.reply_text(
-                    "Congratulation!, You have Successfully changed your twitter username. Add your Address if you haven't",
+                    "Congratulation!, you have successfully changed your twitter username. Add your BSC wallet address if you haven't",
                     reply_markup=view_user_add_addr_keyboard,
                 )
                 return VIEW_USERNAME_ADD_ADDR_STATE
@@ -681,7 +680,7 @@ async def store_change_username(update: Update, context: ContextTypes.DEFAULT_TY
                 cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (message, user_id))
                 sqlite_conn.commit()
                 await update.message.reply_text(
-                    "Congratulation!, You have Successfully changed your twitter username. Be active on Twitter to get Free MLT tokens",
+                    "Congratulation!, you have successfully changed your twitter username. Be active on Twitter to get free MLT tokens",
                     reply_markup=view_user_wallet_keyboard,
                 )
                 return VIEW_USER_WALLET_STATE
@@ -690,7 +689,7 @@ async def store_change_username(update: Update, context: ContextTypes.DEFAULT_TY
             cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (message, user_id))
             sqlite_conn.commit()
             await update.message.reply_text(
-                "Congratulation!, You have Successfully changed your twitter username. Add your Address if you haven't",
+                "Congratulation!, you have successfully changed your twitter username. Add your address if you haven't",
                 reply_markup=view_user_add_addr_group_keyboard,
             )
             return VIEW_USERNAME_ADD_ADDR_DM_STATE
@@ -698,7 +697,7 @@ async def store_change_username(update: Update, context: ContextTypes.DEFAULT_TY
             cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (message, user_id))
             sqlite_conn.commit()
             await update.message.reply_text(
-                "Congratulation!, You have Successfully changed your twitter username. Be active on Twitter to get Free MLT tokens",
+                "Congratulation!, you have successfully changed your twitter username. Be active on Twitter to get free MLT tokens",
                 reply_markup=view_user_wallet_group_keyboard,
             )
             return VIEW_USER_WALLET_DM_STATE

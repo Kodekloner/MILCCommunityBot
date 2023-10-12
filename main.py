@@ -193,7 +193,7 @@ async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE)
                     cursor.execute("UPDATE user_wallet_twitter SET chat_id = ?, telegram_group = ? WHERE userid = ?", (chat.id, chat.title, member.id))
                     sqlite_conn.commit()
         await update.effective_chat.send_message(
-            f"{member_name} was added by {cause_name}. Welcome!",
+            f"{member_name} has joined us! Welcome my fren.",
             parse_mode=ParseMode.HTML,
         )
 
@@ -201,7 +201,7 @@ async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE)
         cursor.execute("DELETE FROM user_wallet_twitter WHERE userid = ?;", (member.id,),)
         sqlite_conn.commit()
         await update.effective_chat.send_message(
-            f"{member_name} is no longer with us. Thanks a lot, {cause_name} ...",
+            f"{member_name} is no longer with us! See you Soon!",
             parse_mode=ParseMode.HTML,
         )
 

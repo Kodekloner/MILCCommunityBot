@@ -21,9 +21,6 @@ sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()
 
-query = f"DROP TABLE IF EXISTS tweets"
-cursor.execute(query)
-
 # Chat Statistics Table
 cursor.execute(
     """
@@ -74,7 +71,7 @@ cursor.execute(
         `created_at` TEXT,
         `username` TEXT,
         `sent_at` TEXT,
-        `sent` TEXT
+        `sent` BOOLEAN
     );
     """
 )
