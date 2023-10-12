@@ -21,7 +21,7 @@ sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()
 
-query = f"DROP TABLE IF EXISTS groups_activities"
+query = f"DROP TABLE IF EXISTS tweets"
 cursor.execute(query)
 
 # Chat Statistics Table
@@ -63,16 +63,6 @@ cursor.execute(
     """
 )
 
-cursor.execute(
-    """
-    CREATE TABLE IF NOT EXISTS `TwitterCompetitionSearch`(
-        `id` INTEGER PRIMARY KEY,
-        `word` TEXT,
-        `since_id` INTEGER
-    );
-    """
-)
-
 # Table for Tweets
 cursor.execute(
     """
@@ -83,7 +73,8 @@ cursor.execute(
         `images` TEXT,
         `created_at` TEXT,
         `username` TEXT,
-        `sent` BOOLEAN
+        `sent_at` TEXT,
+        `sent` TEXT
     );
     """
 )
@@ -156,7 +147,7 @@ cursor.execute(
         `address` TEXT,
         `private_key` TEXT,
         `mnemonic` TEXT,
-        `balance` FLOAT(8)
+        `balance` TEXT
     );
     """
 )

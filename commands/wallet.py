@@ -529,6 +529,7 @@ async def opt_change_address(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 @send_action(ChatAction.TYPING)
 async def store_change_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    chat = update.effective_chat
     message = update.message.text
     if message == "Back ◀️":
         user_id = update.effective_user.id

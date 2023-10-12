@@ -1,13 +1,3 @@
-# import asyncio
-# import os
-# import html
-# import requests
-# import shutil
-# import re
-# import json
-# from datetime import datetime, timedelta
-# from typing import Dict
-# from requests_oauthlib import OAuth1
 import numpy as np
 
 # from telegram import Update
@@ -37,16 +27,10 @@ async def send_tokens(reciever_address, token):
         # Construct from private_key and address
         wallet = BSC(result['private_key'], result['address'])
 
-        gas_fee, tx = wallet._create_transaction(reciever_address, token)
+        # result, message = wallet.send_transaction(reciever_address, token)
+        result, message = wallet.send_token_transaction(reciever_address, token)
+        return result, message
 
-        if gas_fee:
-            result, message = wallet.send_transaction(reciever_address, token)
-            if result:
-                return result, message
-            else:
-                return result, message
-        else:
-            return gas_fee, tx
 
 
 async def distribute_token_winners(group, chat_id, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -86,17 +70,19 @@ async def distribute_token_winners(group, chat_id, context: ContextTypes.DEFAULT
             # You can also store the prize_id and other details in the database for record-keeping
 
             if result:
-                entry = f"{index+1}. Transfer to {participant['username']} with a total of {participant['total']} and address of {participant['address']} was <b>Successful</b>\n<b>Transaction hash: {message}</b>\n\n"
+                entry = f"{index+1}. Transfer of {token} to {participant['username']} with a total score of {participant['total']} and address of {participant['address']} was <b>Successful</b>\n<b>Transaction hash: {message}</b>\n\n"
                 reply_message += entry
                 cursor.execute('INSERT INTO transactions (usersame, address, total, amount, status) VALUES (?, ?, ?, ?,?)',
                                (participant['username'], participant['address'], participant['total'], token, f"Transaction successful! Transaction hash: {message}"))
                 sqlite_conn.commit()
             else:
-                entry = f"{index+1}. Transfer to {participant['username']} with a total of {participant['total']} and address of {participant['address']} <b>failed</b>\n<b>Failed: {message}</b>\n\n"
+                entry = f"{index+1}. Transfer of {token} to {participant['username']} with a total score of {participant['total']} and address of {participant['address']} <b>failed</b>\n<b>Failed: {message}</b>\n\n"
                 reply_message += entry
                 cursor.execute('INSERT INTO transactions (usersame, address, total, amount, status) VALUES (?, ?, ?, ?,?)',
                                (participant['username'], participant['address'], participant['total'], token, f"Transaction failed: {message}"))
                 sqlite_conn.commit()
+
+            
 
     reply_message = "<b>Transaction Status</b>\n\n" + reply_message
 

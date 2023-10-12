@@ -72,7 +72,6 @@ def wait_for_rate_limit(remaining_requests, reset_time):
     else:
         return 0
 
-
 async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Get tweet """
     job_queue = context.job_queue
@@ -167,7 +166,7 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
                             photo_url,
                             created_at,
                             username,
-                            False,
+                            "",
                         ),
                     )
 
@@ -224,14 +223,19 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
     user_scores = {}
 
     if results:
+        current_time = datetime.utcnow()
+
+        # Subtract one day from the current timestamp
+        previous_day = current_time - timedelta(days=1)
         for result in results:
-            created_time = result['created_at']
+            sent_time = result['sent_at']
             sent = result['sent']
-            started_time = job.data[0]
 
-            created_time = datetime.strptime(created_time, '%Y-%m-%dT%H:%M:%S.%fZ')
+            sent_time = datetime.strptime(sent_time, '%Y-%m-%d %H:%M:%S.%f')
+            print(sent_time)
+            print(previous_day)
 
-            if created_time >= started_time and sent == 1:
+            if sent_time >= previous_day and sent != "":
                 tweet_id = result['tw_id']
                 headers = {'authorization': f'Bearer {bearer_token}'}
 
@@ -376,13 +380,13 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                            (username, tweets, replies, likes, retweets, total, username))
             sqlite_conn.commit()
 
-        if not job.data[1]:
+        if not job.data:
             await context.bot.send_message(job.chat_id,
                 "<b>Competition Started Successfully\n</b>"
                 "Display the leaderboard to groups.",
                 parse_mode=ParseMode.HTML,
             )
-            job.data[1] = True
+            job.data = True
 
         message = "<b>Competition Scores calculated Successfully\n</b>"
         if (
@@ -411,28 +415,38 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         job.data[2] = True
     cursor.execute("SELECT DISTINCT chat_id FROM chat_stats WHERE type LIKE '%group%' AND title = ?;", (job.data[3],),)
-    result = cursor.fetchone()
+    group_chat_id = cursor.fetchone()
 
-    if result:
-        cursor.execute(
-            """
-            SELECT * FROM `tweets` WHERE sent = ? ORDER BY id DESC LIMIT 5
-            """,
-            (False,),
-        )
+    if group_chat_id:
+        cursor.execute("SELECT * FROM tweets")
+        tweets_rows = cursor.fetchall()
 
-        rows = cursor.fetchall()
-
-        if not rows:
+        if not tweets_rows:
             return
 
+        sending_to = []
+
+        for row in tweets_rows:
+            sent_groups = [group.strip() for group in row['sent'].split(',')]
+            if job.data[3] not in sent_groups:
+                sending_to.append(row)
+
+            if len(sending_to) == 5:
+                break
+
+        if sending_to == []:
+            return
+
+        sent_time = datetime.utcnow()
+        print(sent_time)
+
         influencers = ""
-        for index, row in enumerate(rows, start=1):
+        for index, row in enumerate(sending_to, start=1):
             tweet_status_id = row["tw_id"]
             screen_name = row["username"]
 
             # Check if it is the last row
-            if index == len(rows):
+            if index == len(sending_to):
                 username = f'<a href="https://twitter.com/i/status/{tweet_status_id}">{screen_name}</a>'
                 last_index = index  # Store the last index
             else:
@@ -440,21 +454,35 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
 
             influencers += username
 
+            # Check if telegram_groups field is already populated
             cursor.execute(
                 """
-                UPDATE tweets SET sent=? WHERE id=?;
+                SELECT sent FROM `tweets` WHERE id = ?;
                 """,
-                (True, row['id']),
+                (row['id'],),
+            )
+            group_result = cursor.fetchone()
+
+            if group_result and group_result[0]:  # Check if the field is not empty
+                sent_groups = f"{group_result[0]},{job.data[3]}"
+            else:
+                sent_groups = job.data[3]
+
+            cursor.execute(
+                """
+                UPDATE tweets SET sent=?, sent_at=? WHERE id=?;
+                """,
+                (sent_groups, sent_time, row['id']),
             )
 
         message = f"🚀 Let's Raid these {last_index} new tweets\n\n" +  influencers + "\n\n📢 To spread the word faster\n\nJust click on the influencers above, you will be directed to their tweet\n"
 
         if job.data[1] == "Photo":
             # await context.bot.send_photo(result['chat_id'], photo=image_url, caption=tweet_text)
-            await context.bot.send_photo(result['chat_id'], photo=job.data[0], caption=message, parse_mode=ParseMode.HTML,)
+            await context.bot.send_photo(group_chat_id['chat_id'], photo=job.data[0], caption=message, parse_mode=ParseMode.HTML,)
         elif job.data[1] == "Gif":
             # await context.bot.send_photo(result['chat_id'], photo=image_url, caption=tweet_text)
-            await context.bot.send_animation(result['chat_id'], animation=job.data[0], caption=message, parse_mode=ParseMode.HTML,)
+            await context.bot.send_animation(group_chat_id['chat_id'], animation=job.data[0], caption=message, parse_mode=ParseMode.HTML,)
 
 async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
     job_queue = context.job_queue
