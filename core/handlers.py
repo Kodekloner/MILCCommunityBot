@@ -17,6 +17,7 @@ from constants.keys import BACK_KEY
 from constants.keys import BACK_TO_HOME_KEY
 from constants.keys import HELP_KEY
 from constants.keys import TWITTER_KEY
+from constants.keys import LEAVE_COMP_KEY
 from constants.keys import ADMIN_WALLET_KEY
 from constants.keys import COMPETITION_KEY
 from constants.keys import USER_WALLET_KEY
@@ -85,6 +86,8 @@ from constants.states import COMFIRM_BAN_PARTICIPANT_STATE
 from constants.states import START_STATE
 from constants.states import ADMIN_WALLET_STATE
 from constants.states import USER_WALLET_STATE
+from constants.states import LEAVE_COMP_STATE
+from constants.states import COMFIRM_LEAVE_COMP_STATE
 from constants.states import ADD_USER_WALLET_STATE
 from constants.states import ADD_USER_WALLET_GROUP_STATE
 from constants.states import INSERT_USER_GROUP_STATE
@@ -114,30 +117,45 @@ def base_conversation_handler():
             START_STATE: [MessageHandler(filters.TEXT, start.start)],
             # home ==>
             HOME_STATE: [
+                CommandHandler("admin", admin.admin),
+                CommandHandler("addadmin", admin.add_admin),
+                CommandHandler("groups", admin.get_groups),
+                CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{HELP_KEY}$"),
                                wallet.help),
                 MessageHandler(filters.Regex(f"^{USER_WALLET_KEY}$"),
                                wallet.wallet),
+                MessageHandler(filters.Regex(f"^{LEAVE_COMP_KEY}$"),
+                               wallet.leave_comp),
+            ],
+            COMFIRM_LEAVE_COMP_STATE: [
                 CommandHandler("admin", admin.admin),
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
                 CommandHandler("reset", admin.reset),
+                MessageHandler(filters.TEXT, wallet.comfirm_leave_comp),
             ],
             ADD_USER_WALLET_STATE: [
+                CommandHandler("admin", admin.admin),
+                CommandHandler("addadmin", admin.add_admin),
+                CommandHandler("groups", admin.get_groups),
+                CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{ADD_ADDRESS_KEY}$"),
                                wallet.add_address),
                 MessageHandler(filters.Regex(f"^{ADD_TWITTER_USER_KEY}$"),
                                wallet.add_username),
                 MessageHandler(filters.Regex(f"^{BACK_TO_HOME_KEY}$"),
                                wallet.back_to_home),
+            ],
+            ADD_USER_WALLET_GROUP_STATE: [
                 CommandHandler("admin", admin.admin),
                 CommandHandler("addadmin", admin.add_admin),
                 CommandHandler("groups", admin.get_groups),
                 CommandHandler("reboot", rule.reboot),
                 CommandHandler("reset", admin.reset),
-            ],
-            ADD_USER_WALLET_GROUP_STATE: [
                 MessageHandler(filters.Regex(f"^{ADD_ADDRESS_KEY}$"),
                                wallet.add_address),
                 MessageHandler(filters.Regex(f"^{SHOW_ADDRESS_KEY}$"),
@@ -150,14 +168,14 @@ def base_conversation_handler():
                                wallet.back_to_home),
                 MessageHandler(filters.Regex(f"^{SELECT_GROUP_KEY}$"),
                                wallet.user_select_group),
-                CommandHandler("admin", admin.admin),
-                CommandHandler("addadmin", admin.add_admin),
-                CommandHandler("groups", admin.get_groups),
-                CommandHandler("reboot", rule.reboot),
-                CommandHandler("reset", admin.reset),
             ],
             INSERT_USER_GROUP_STATE: [
                 CallbackQueryHandler(wallet.button_callback_user_group),
+                CommandHandler("admin", admin.admin),
+                CommandHandler("addadmin", admin.add_admin),
+                CommandHandler("groups", admin.get_groups),
+                CommandHandler("reboot", rule.reboot),
+                CommandHandler("reset", admin.reset),
                 MessageHandler(filters.Regex(f"^{ADD_ADDRESS_KEY}$"),
                                wallet.add_address),
                 MessageHandler(filters.Regex(f"^{SHOW_ADDRESS_KEY}$"),
@@ -170,11 +188,6 @@ def base_conversation_handler():
                                wallet.back_to_home),
                 MessageHandler(filters.Regex(f"^{SELECT_GROUP_KEY}$"),
                                wallet.user_select_group),
-                CommandHandler("admin", admin.admin),
-                CommandHandler("addadmin", admin.add_admin),
-                CommandHandler("groups", admin.get_groups),
-                CommandHandler("reboot", rule.reboot),
-                CommandHandler("reset", admin.reset),
             ],
             VIEW_USER_WALLET_STATE: [
                 CommandHandler("admin", admin.admin),

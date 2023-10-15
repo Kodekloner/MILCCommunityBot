@@ -470,7 +470,7 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
     if distinct_id:
         group_chat_id = distinct_id["chat_id"]
 
-        cursor.execute("SELECT * FROM user_wallet_twitter WHERE telegram_group = ?;", (job.data[2],),)
+        cursor.execute("SELECT * FROM user_wallet_twitter WHERE telegram_group = ? AND ban=?;", (job.data[2], False),)
         participates = cursor.fetchall()
 
         if not participates:
@@ -482,7 +482,10 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
 
         leaderboard = {}
         for participate in participates:
-            p_user = participate['username']
+            if participate['username'] != None:
+                    p_user = participate['username']
+            else:
+                p_user = participate['first_name']
             p_tuser = participate['twitter_username']
             cursor.execute(
                 """

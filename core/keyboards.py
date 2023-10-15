@@ -8,6 +8,7 @@ from constants.keys import BACK_KEY, FEEDBACK_KEY
 from constants.keys import BACK_TO_HOME_KEY
 from constants.keys import HELP_KEY
 from constants.keys import USER_WALLET_KEY
+from constants.keys import LEAVE_COMP_KEY
 from constants.keys import SELECT_GROUP_KEY
 from constants.keys import ADMIN_KEY
 from constants.keys import TWITTER_KEY
@@ -54,7 +55,8 @@ from constants.keys import CHANGE_TWITTER_USER_KEY
 
 
 base_reply_keyboard: list = [
-    [HELP_KEY, USER_WALLET_KEY]
+    [HELP_KEY, USER_WALLET_KEY],
+    [LEAVE_COMP_KEY]
 ]
 base_keyboard = ReplyKeyboardMarkup(base_reply_keyboard, resize_keyboard=True, selective=True)
 

@@ -20,6 +20,7 @@ from constants.keys import USER_WALLET_KEY
 from constants.messages import SEND_YOUR_MESSAGE
 from constants.messages import WELCOME_TO_HOME
 from constants.states import HOME_STATE
+from constants.states import COMFIRM_LEAVE_COMP_STATE
 from constants.states import USER_WALLET_STATE
 from constants.states import VIEW_USER_WALLET_STATE
 from constants.states import ADD_USER_WALLET_STATE
@@ -39,6 +40,7 @@ from constants.states import VIEW_USERNAME_ADD_ADDR_STATE
 from constants.states import OPT_CHANGE_USERNAME_STATE
 from constants.states import OPT_CHANGE_ADDRESS_STATE
 from core.keyboards import back_keyboard
+from core.keyboards import yes_or_no_without_back_key
 from core.keyboards import base_keyboard
 from core.keyboards import add_user_wallet_keyboard
 from core.keyboards import add_user_wallet_group_keyboard
@@ -80,6 +82,48 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=base_keyboard,
         parse_mode=ParseMode.HTML,
     )
+
+
+@send_action(ChatAction.TYPING)
+async def leave_comp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    chat = update.effective_chat
+    user_id = update.effective_user.id
+    cursor = sqlite_conn.cursor()
+    cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
+    result = cursor.fetchone()
+    if result:
+        await update.message.reply_text(
+            'Are you sure you want to leave the competition.',
+            reply_markup=yes_or_no_without_back_key,
+        )
+        return COMFIRM_LEAVE_COMP_STATE
+    else:
+        await update.message.reply_text(
+            "You are not in the competition yet.",
+            reply_markup=base_keyboard,
+        )
+
+@send_action(ChatAction.TYPING)
+async def comfirm_leave_comp(update: Update, context: ContextTypes.DEFAULT_TYPE)->str:
+    leave = update.message.text
+    if leave == "Yes":
+        user_id = update.effective_user.id
+        cursor = sqlite_conn.cursor()
+        if update.effective_user.username != None:
+            telegram_username = update.effective_user.username
+        else:
+            telegram_username = update.effective_user.first_name
+        cursor.execute("DELETE FROM user_wallet_twitter WHERE userid=?", (user_id,),)
+        await update.message.reply_text(
+            f'You({telegram_username}) have successfully left the competition',
+            reply_markup=base_keyboard,
+        )
+    elif leave == "No":
+        await update.message.reply_text(
+            'Welcome back',
+            reply_markup=base_keyboard,
+        )
+    return HOME_STATE
 
 @send_action(ChatAction.TYPING)
 async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -147,7 +191,6 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     )
     return ADD_USER_WALLET_GROUP_STATE
 
-
 @send_action(ChatAction.TYPING)
 async def user_select_group(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     cursor = sqlite_conn.cursor()
@@ -213,6 +256,7 @@ async def button_callback_user_group(update: Update, context: ContextTypes.DEFAU
     selected_user_title = query.data
     user_id = update.effective_user.id
     telegram_username = update.effective_user.username
+    first_name = update.effective_user.first_name
     chat_id = update.effective_chat.id
     ban = False
 
@@ -223,7 +267,7 @@ async def button_callback_user_group(update: Update, context: ContextTypes.DEFAU
     await query.answer()
 
     if not result:
-        cursor.execute("INSERT INTO user_wallet_twitter (userid, chat_id, username, telegram_group, ban) VALUES (?,?,?,?,?)", (user_id, chat_id, telegram_username, selected_user_title, ban))
+        cursor.execute("INSERT INTO user_wallet_twitter (userid, chat_id, username, telegram_group, ban, first_name) VALUES (?,?,?,?,?,?)", (user_id, chat_id, telegram_username, selected_user_title, ban, first_name))
         sqlite_conn.commit()
         query.edit_message_text(text=f"Successfully selected your group\n\nGroup name: {selected_user_title}")
         return ADD_USER_WALLET_GROUP_STATE
@@ -313,6 +357,7 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
     elif verify_bsc_wallet_address(address):
         user_id = update.effective_user.id
         telegram_username = update.effective_user.username
+        first_name = update.effective_user.first_name
         chat_id = chat.id
         ban = False
         cursor = sqlite_conn.cursor()
@@ -327,19 +372,11 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
                 reply_markup=base_keyboard,
             )
             return HOME_STATE
-            # else:
-            #     cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (address, user_id))
-            #     sqlite_conn.commit()
-            #     await update.message.reply_text(
-            #         "Please add your Twitter Username",
-            #         reply_markup=back_keyboard,
-            #     )
-            #     return STORE_USERNAME_STATE
         else:
             if chat.type != Chat.PRIVATE:
-                cursor.execute("INSERT INTO user_wallet_twitter (userid, address, chat_id, username, telegram_group, ban) VALUES (?,?,?,?,?,?)", (user_id, address, chat_id, telegram_username, chat.title, ban))
+                cursor.execute("INSERT INTO user_wallet_twitter (userid, address, chat_id, username, telegram_group, ban, first_name) VALUES (?,?,?,?,?,?,?)", (user_id, address, chat_id, telegram_username, chat.title, ban, first_name))
             else:
-                cursor.execute("INSERT INTO user_wallet_twitter (userid, address, chat_id, username, ban) VALUES (?,?,?,?,?)", (user_id, address, chat_id, telegram_username, ban))
+                cursor.execute("INSERT INTO user_wallet_twitter (userid, address, chat_id, username, ban, first_name) VALUES (?,?,?,?,?,?)", (user_id, address, chat_id, telegram_username, ban, first_name))
 
             sqlite_conn.commit()
             await update.message.reply_text(
@@ -366,6 +403,7 @@ async def add_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
 async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     chat = update.effective_chat
     username = update.message.text
+    first_name = update.effective_user.first_name
     if username == "Back ◀️":
         user_id = update.effective_user.id
         cursor = sqlite_conn.cursor()
@@ -446,18 +484,11 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 reply_markup=base_keyboard,
             )
             return HOME_STATE
-            # else:
-            #     cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (username, user_id))
-            #     await update.message.reply_text(
-            #         "Please add one of your BSC wallet address to participate in the competition",
-            #         reply_markup=back_keyboard,
-            #     )
-            #     return STORE_ADDRESS_STATE
         else:
             if chat.type != Chat.PRIVATE:
-                cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username, chat_id, username, telegram_group, ban) VALUES (?,?,?,?,?,?)", (user_id, username, chat_id, telegram_username, chat.title, ban))
+                cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username, chat_id, username, telegram_group, ban, first_name) VALUES (?,?,?,?,?,?,?)", (user_id, username, chat_id, telegram_username, chat.title, ban, first_name))
             else:
-                cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username, chat_id, username, ban) VALUES (?,?,?,?,?)", (user_id, username, chat_id, telegram_username, ban))
+                cursor.execute("INSERT INTO user_wallet_twitter (userid, twitter_username, chat_id, username, ban, first_name) VALUES (?,?,?,?,?,?)", (user_id, username, chat_id, telegram_username, ban, first_name))
 
             await update.message.reply_text(
                 "Congratulation!, your Twitter username was added successfully. Add your address if you haven't",
@@ -646,7 +677,6 @@ async def opt_change_username(update: Update, context: ContextTypes.DEFAULT_TYPE
             reply_markup=change_username_keyboard,
         )
         return OPT_CHANGE_USERNAME_STATE
-
 
 @send_action(ChatAction.TYPING)
 async def store_change_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:

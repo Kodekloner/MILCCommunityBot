@@ -11,6 +11,7 @@ ADD_TWITTER_USER_KEY: str = "Twitter usersname 👨‍💼"
 CHANGE_ADDRESS_KEY: str = "Change Address 💲"
 CHANGE_TWITTER_USER_KEY: str = "Change Twitter username 👨‍💼"
 SELECT_GROUP_KEY: str = "Select Group"
+LEAVE_COMP_KEY: str = "Leave Comp"
 
 
 # admin panel keys
