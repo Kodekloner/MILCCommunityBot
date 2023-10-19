@@ -26,7 +26,6 @@ from config.logger import logger
 from config.options import config
 from config.db import sqlite_conn
 from core.handlers import base_conversation_handler
-from utils.string import get_first_name
 
 password = config["TELEGRAM"]["MONGODB_PWD"]
 connection_string = f"mongodb+srv://billgateokoye:{password}@cluster0.3ver0qh.mongodb.net/?retryWrites=true&w=majority"
@@ -63,12 +62,11 @@ async def post_init(application: Application) -> None:
 
     for result in results:
         if result['first_name'] == None:
-            first_name = await get_first_name(result['userid'])
+            first_name = await application.bot.get_chat(result['userid'])
+            first_name = first_name.first_name
             cursor.execute("UPDATE user_wallet_twitter SET first_name  = ? WHERE userid = ?", (first_name, result['userid']))
             sqlite_conn.commit()
-
-
-
+            
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
