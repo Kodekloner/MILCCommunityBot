@@ -1326,7 +1326,10 @@ async def view_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         message = ""
 
         for index, result in enumerate(results, start=1):
-            username = result["username"]
+            if result["username"] == None:
+                username = result["first_name"]
+            else:
+                username = result["username"]
             entry = f"{index}. {username}\n"
             message += entry
 
@@ -1348,11 +1351,21 @@ async def view_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 @restricted
 @send_action(ChatAction.TYPING)
 async def ban_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    await update.message.reply_text(
-        'Input the username of the participant you want to ban',
-        reply_markup=back_keyboard,
-    )
-    return BAN_PARTICIPANT_STATE
+    cursor = sqlite_conn.cursor()
+    cursor.execute("SELECT * FROM user_wallet_twitter WHERE ban=?", (False,),)
+    results = cursor.fetchall()
+    if results:
+        await update.message.reply_text(
+            'Input the username of the participant you want to ban',
+            reply_markup=back_keyboard,
+        )
+        return BAN_PARTICIPANT_STATE
+    else:
+        await update.message.reply_text(
+            "You don't have a participant that is not banned yet",
+            reply_markup=participant_keyboard,
+        )
+        return PARTICIPANT_STATE
 
 @restricted
 @send_action(ChatAction.TYPING)
@@ -1380,11 +1393,11 @@ async def delete_participant(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if ban == "Yes":
         user_to_ban = context.user_data.get('user_to_ban')
         cursor = sqlite_conn.cursor()
-        cursor.execute("DELETE FROM user_wallet_twitter WHERE username=?", (user_to_ban,),)
+        cursor.execute("UPDATE user_wallet_twitter SET ban=? WHERE username=? OR first_name=?", (True, user_to_ban, user_to_ban),)
 
         if cursor.rowcount > 0:
             await update.message.reply_text(
-                f'{user_to_ban} has been successfully deleted',
+                f'{user_to_ban} has been successfully banned',
                 reply_markup=participant_keyboard,
             )
             return PARTICIPANT_STATE

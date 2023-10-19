@@ -56,17 +56,6 @@ async def post_init(application: Application) -> None:
             text=f"📝 Started @{application.bot.username} (ID: {application.bot.id}) at {datetime.datetime.now()}",
         )
 
-    cursor = sqlite_conn.cursor()
-    cursor.execute("SELECT * FROM user_wallet_twitter")
-    results = cursor.fetchall()
-
-    for result in results:
-        if result['first_name'] == None:
-            first_name = await application.bot.get_chat(result['userid'])
-            first_name = first_name.first_name
-            cursor.execute("UPDATE user_wallet_twitter SET first_name  = ? WHERE userid = ?", (first_name, result['userid']))
-            sqlite_conn.commit()
-            
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
