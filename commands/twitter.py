@@ -46,8 +46,6 @@ def make_api_request_with_backoff(context: ContextTypes.DEFAULT_TYPE, endpoint, 
         reset_time = int(response.headers.get('x-rate-limit-reset'))
         return response.json(), remaining_requests, reset_time
     else:
-        print(response.status_code)
-        print(response.text)
         message = f"{response.status_code}\n\n{response.text}"
         if (
             "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
@@ -62,8 +60,6 @@ def make_api_request_with_backoff(context: ContextTypes.DEFAULT_TYPE, endpoint, 
         return None, None, None
 
 def wait_for_rate_limit(remaining_requests, reset_time):
-    print(f"Remaining requests: {remaining_requests}")
-    print(f"Reset time: {reset_time}")
 
     if remaining_requests == 0:
         current_time = time.time()
@@ -132,9 +128,6 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
                 )
                 job.data = True
 
-            # print(json.dumps(response.json(), indent=2, sort_keys = True))
-            # print(response_data)
-
             if "data" in response_data:
                 for tweet in response_data["data"]:
                     tweet_id = tweet["id"]
@@ -189,8 +182,6 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
                 "check your keywords and send again",
                 parse_mode=ParseMode.HTML,
             )
-            print(response.status_code)
-            print(response.text)
 
     else:
         if any(job.callback == get_tweets or job.callback == send_tweets for job in job_queue.jobs()):
@@ -232,8 +223,6 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
             sent = result['sent']
 
             sent_time = datetime.strptime(sent_time, '%Y-%m-%d %H:%M:%S.%f')
-            print(sent_time)
-            print(previous_day)
 
             if sent_time >= previous_day and sent == 1:
                 tweet_id = result['tw_id']
@@ -244,9 +233,6 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                 retweeted_response, remaining_requests, reset_time = make_api_request_with_backoff(context, retweeted_endpoint, headers=headers)
 
                 if retweeted_response is not None:
-                    print("retweeted")
-                    print(json.dumps(retweeted_response, indent=2, sort_keys = True))
-                    print()
                     if "data" in retweeted_response:
                         for usernames in retweeted_response["data"]:
                             username = usernames["username"]
@@ -254,7 +240,6 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                 sleep_time = wait_for_rate_limit(remaining_requests, reset_time)
                 if sleep_time > 0:
-                    print(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time...")
                     message = f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time..."
                     if (
                         "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
@@ -273,9 +258,6 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                 liking_response, remaining_requests, reset_time = make_api_request_with_backoff(context, liking_endpoint, headers=headers)
 
                 if liking_response is not None:
-                    print("liked")
-                    print(json.dumps(liking_response, indent=2, sort_keys = True))
-                    print()
                     if "data" in liking_response:
                         for usernames in liking_response["data"]:
                             username = usernames["username"]
@@ -283,7 +265,6 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                 sleep_time = wait_for_rate_limit(remaining_requests, reset_time)
                 if sleep_time > 0:
-                    print(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time...")
                     message = f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time..."
                     if (
                         "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
@@ -312,9 +293,6 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                 response, remaining_requests, reset_time = make_api_request_with_backoff(context, replies_endpoint, params=params, headers=headers)
 
                 if response is not None:
-                    print("replies")
-                    print(json.dumps(response, indent=2, sort_keys = True))
-                    print()
 
                     if "data" in response:
                         for tweet in response["data"]:
@@ -327,7 +305,6 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                 sleep_time = wait_for_rate_limit(remaining_requests, reset_time)
                 if sleep_time > 0:
-                    print(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time...")
                     message = f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time..."
                     if (
                         "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
@@ -425,7 +402,6 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
         sent_time = datetime.utcnow()
-        print(sent_time)
 
         influencers = ""
         for index, row in enumerate(sending_to, start=1):

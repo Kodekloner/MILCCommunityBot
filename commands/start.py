@@ -1,17 +1,14 @@
-# encoding: utf-8
 import time
 from datetime import datetime
 from datetime import timezone
 from logging import getLogger
 
-# import psycopg2
 from telegram import Update
 from telegram.constants import ChatAction
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from telegram.ext import ConversationHandler
 
-# from connectors.postgresql import create_user
 from constants import NO
 from constants import YES
 from constants.keys import BACK_KEY
@@ -21,7 +18,6 @@ from constants.messages import WELCOME_MESSAGE
 from constants.states import HOME_STATE
 from core.keyboards import base_keyboard
 from utils.decorators import send_action
-# Init logger
 
 logger = getLogger(__name__)
 

@@ -1,4 +1,3 @@
-# encoding: utf-8
 import management
 from logging import getLogger
 
@@ -16,7 +15,6 @@ from core.keyboards import base_keyboard
 from core.keyboards import yes_or_no_without_back_key
 from utils.decorators import send_action
 
-# Init logger
 
 logger = getLogger(__name__)
 

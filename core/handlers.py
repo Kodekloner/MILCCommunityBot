@@ -9,7 +9,6 @@ from telegram.ext import (
 )
 
 from commands import admin
-from commands import privacy
 from commands import rule
 from commands import start
 from commands import wallet

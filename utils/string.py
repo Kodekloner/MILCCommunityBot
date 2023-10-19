@@ -4,8 +4,6 @@ from typing import Optional
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
-# import pprint
-
 from pymongo import MongoClient
 from config.options import config
 

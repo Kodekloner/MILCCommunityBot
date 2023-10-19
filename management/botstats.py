@@ -6,8 +6,6 @@ from config.db import sqlite_conn
 from utils import readable_time
 from utils.decorators import description, example, triggers, usage
 
-import pprint
-
 from pymongo import MongoClient
 from config.options import config
 

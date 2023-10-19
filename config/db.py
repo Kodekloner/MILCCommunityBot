@@ -21,10 +21,6 @@ sqlite_conn.row_factory = sqlite3.Row
 
 cursor = sqlite_conn.cursor()
 
-# query = f"DROP TABLE IF EXISTS user_wallet_twitter"
-query = "ALTER TABLE user_wallet_twitter ADD COLUMN first_name TEXT;"
-cursor.execute(query)
-
 # Chat Statistics Table
 cursor.execute(
     """

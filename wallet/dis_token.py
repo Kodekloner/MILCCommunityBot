@@ -49,9 +49,6 @@ async def distribute_token_winners(group, chat_id, context: ContextTypes.DEFAULT
 
     participants = cursor.fetchall()
 
-    # if participates:
-    #     print(np.array(rows))
-
     # Retrieve the prize data
     prize_query = "SELECT id, token FROM prize ORDER BY id ASC;"
 

@@ -364,7 +364,6 @@ async def store_address(update: Update, context: ContextTypes.DEFAULT_TYPE) -> s
         cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
         result = cursor.fetchone()
         if result:
-            # if result['twitter_username'] is not None and result['twitter_username'] != "" :
             cursor.execute("UPDATE user_wallet_twitter SET address = ? WHERE userid = ?", (address, user_id))
             sqlite_conn.commit()
             await update.message.reply_text(
@@ -477,7 +476,6 @@ async def store_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         cursor.execute("SELECT * FROM user_wallet_twitter WHERE userid = ?", (user_id,))
         result = cursor.fetchone()
         if result:
-            # if result['address'] is not None and result['address'] != None :
             cursor.execute("UPDATE user_wallet_twitter SET twitter_username = ? WHERE userid = ?", (username, user_id))
             await update.message.reply_text(
                 "Congratulation!, you can now participate in the competition ",
