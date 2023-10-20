@@ -481,14 +481,17 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
 
         if not participates:
             await context.bot.send_message(job.chat_id,
-                "❌You don't have Participant yet for the Selected group",
+                "❌You don't have participant yet for the selected group",
             )
             job.data[0] = True
             return
 
         leaderboard = {}
         for participate in participates:
-            p_user = participate['username']
+            if participate['username'] != None:
+                    p_user = participate['username']
+            else:
+                p_user = participate['first_name']
             p_tuser = participate['twitter_username']
             cursor.execute(
                 """
@@ -518,7 +521,7 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
 
         if not job.data[1]:
             await context.bot.send_message(job.chat_id,
-                "Successful, the Competition Leaderboard will be displayed at the set time",
+                "Successful, the competition leaderboard will be displayed at the set time",
             )
             job.data[1] = True
         # Prepare the leaderboard message
@@ -536,4 +539,3 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
             text=message,
             parse_mode=ParseMode.HTML,
         )
-
