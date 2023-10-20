@@ -46,6 +46,8 @@ def make_api_request_with_backoff(context: ContextTypes.DEFAULT_TYPE, endpoint, 
         reset_time = int(response.headers.get('x-rate-limit-reset'))
         return response.json(), remaining_requests, reset_time
     else:
+        print(response.status_code)
+        print(response.text)
         message = f"{response.status_code}\n\n{response.text}"
         if (
             "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
@@ -60,6 +62,8 @@ def make_api_request_with_backoff(context: ContextTypes.DEFAULT_TYPE, endpoint, 
         return None, None, None
 
 def wait_for_rate_limit(remaining_requests, reset_time):
+    print(f"Remaining requests: {remaining_requests}")
+    print(f"Reset time: {reset_time}")
 
     if remaining_requests == 0:
         current_time = time.time()
@@ -67,6 +71,7 @@ def wait_for_rate_limit(remaining_requests, reset_time):
         return sleep_time
     else:
         return 0
+
 
 async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Get tweet """
@@ -128,6 +133,9 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
                 )
                 job.data = True
 
+            # print(json.dumps(response.json(), indent=2, sort_keys = True))
+            # print(response_data)
+
             if "data" in response_data:
                 for tweet in response_data["data"]:
                     tweet_id = tweet["id"]
@@ -159,7 +167,7 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
                             photo_url,
                             created_at,
                             username,
-                            "",
+                            False,
                         ),
                     )
 
@@ -182,6 +190,8 @@ async def get_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
                 "check your keywords and send again",
                 parse_mode=ParseMode.HTML,
             )
+            print(response.status_code)
+            print(response.text)
 
     else:
         if any(job.callback == get_tweets or job.callback == send_tweets for job in job_queue.jobs()):
@@ -223,6 +233,8 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
             sent = result['sent']
 
             sent_time = datetime.strptime(sent_time, '%Y-%m-%d %H:%M:%S.%f')
+            print(sent_time)
+            print(previous_day)
 
             if sent_time >= previous_day and sent == 1:
                 tweet_id = result['tw_id']
@@ -233,6 +245,9 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                 retweeted_response, remaining_requests, reset_time = make_api_request_with_backoff(context, retweeted_endpoint, headers=headers)
 
                 if retweeted_response is not None:
+                    print("retweeted")
+                    print(json.dumps(retweeted_response, indent=2, sort_keys = True))
+                    print()
                     if "data" in retweeted_response:
                         for usernames in retweeted_response["data"]:
                             username = usernames["username"]
@@ -240,6 +255,7 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                 sleep_time = wait_for_rate_limit(remaining_requests, reset_time)
                 if sleep_time > 0:
+                    print(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time...")
                     message = f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time..."
                     if (
                         "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
@@ -258,6 +274,9 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                 liking_response, remaining_requests, reset_time = make_api_request_with_backoff(context, liking_endpoint, headers=headers)
 
                 if liking_response is not None:
+                    print("liked")
+                    print(json.dumps(liking_response, indent=2, sort_keys = True))
+                    print()
                     if "data" in liking_response:
                         for usernames in liking_response["data"]:
                             username = usernames["username"]
@@ -265,6 +284,7 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                 sleep_time = wait_for_rate_limit(remaining_requests, reset_time)
                 if sleep_time > 0:
+                    print(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time...")
                     message = f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time..."
                     if (
                         "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
@@ -293,6 +313,9 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
                 response, remaining_requests, reset_time = make_api_request_with_backoff(context, replies_endpoint, params=params, headers=headers)
 
                 if response is not None:
+                    print("replies")
+                    print(json.dumps(response, indent=2, sort_keys = True))
+                    print()
 
                     if "data" in response:
                         for tweet in response["data"]:
@@ -305,6 +328,7 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
 
                 sleep_time = wait_for_rate_limit(remaining_requests, reset_time)
                 if sleep_time > 0:
+                    print(f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time...")
                     message = f"Rate limit reached. Waiting for {sleep_time:.2f} seconds until reset time..."
                     if (
                         "LOGGING_CHANNEL_ID" in config["TELEGRAM"]
@@ -392,24 +416,31 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         job.data[2] = True
     cursor.execute("SELECT DISTINCT chat_id FROM chat_stats WHERE type LIKE '%group%' AND title = ?;", (job.data[3],),)
-    group_chat_id = cursor.fetchone()
+    result = cursor.fetchone()
 
-    if group_chat_id:
-        cursor.execute("SELECT * FROM tweets")
-        tweets_rows = cursor.fetchall()
+    if result:
+        cursor.execute(
+            """
+            SELECT * FROM `tweets` WHERE sent = ? ORDER BY id DESC LIMIT 5
+            """,
+            (False,),
+        )
 
-        if not tweets_rows:
+        rows = cursor.fetchall()
+
+        if not rows:
             return
 
         sent_time = datetime.utcnow()
+        print(sent_time)
 
         influencers = ""
-        for index, row in enumerate(sending_to, start=1):
+        for index, row in enumerate(rows, start=1):
             tweet_status_id = row["tw_id"]
             screen_name = row["username"]
 
             # Check if it is the last row
-            if index == len(sending_to):
+            if index == len(rows):
                 username = f'<a href="https://twitter.com/i/status/{tweet_status_id}">{screen_name}</a>'
                 last_index = index  # Store the last index
             else:
@@ -417,7 +448,6 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
 
             influencers += username
 
-            # Check if telegram_groups field is already populated
             cursor.execute(
                 """
                 UPDATE tweets SET sent=?, sent_at=? WHERE id=?;
@@ -429,10 +459,10 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
 
         if job.data[1] == "Photo":
             # await context.bot.send_photo(result['chat_id'], photo=image_url, caption=tweet_text)
-            await context.bot.send_photo(group_chat_id['chat_id'], photo=job.data[0], caption=message, parse_mode=ParseMode.HTML,)
+            await context.bot.send_photo(result['chat_id'], photo=job.data[0], caption=message, parse_mode=ParseMode.HTML,)
         elif job.data[1] == "Gif":
             # await context.bot.send_photo(result['chat_id'], photo=image_url, caption=tweet_text)
-            await context.bot.send_animation(group_chat_id['chat_id'], animation=job.data[0], caption=message, parse_mode=ParseMode.HTML,)
+            await context.bot.send_animation(result['chat_id'], animation=job.data[0], caption=message, parse_mode=ParseMode.HTML,)
 
 async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
     job_queue = context.job_queue
@@ -446,7 +476,7 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
     if distinct_id:
         group_chat_id = distinct_id["chat_id"]
 
-        cursor.execute("SELECT * FROM user_wallet_twitter WHERE telegram_group = ? AND ban=?;", (job.data[2], False),)
+        cursor.execute("SELECT * FROM user_wallet_twitter WHERE telegram_group = ?;", (job.data[2],),)
         participates = cursor.fetchall()
 
         if not participates:
@@ -458,10 +488,7 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
 
         leaderboard = {}
         for participate in participates:
-            if participate['username'] != None:
-                    p_user = participate['username']
-            else:
-                p_user = participate['first_name']
+            p_user = participate['username']
             p_tuser = participate['twitter_username']
             cursor.execute(
                 """
@@ -509,3 +536,4 @@ async def display_board(context: ContextTypes.DEFAULT_TYPE) -> None:
             text=message,
             parse_mode=ParseMode.HTML,
         )
+
