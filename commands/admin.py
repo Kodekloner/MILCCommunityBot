@@ -2150,7 +2150,7 @@ async def admin_send_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         for index, data in enumerate(user_data):
             media = [FILE_PATH_ON_SERVER, USER_UPLOADED_FILE_TYPE, False]
             media.append(data)
-            context.job_queue.run_repeating(send_tweets, interval=1800, first=1, chat_id=chat_id, name=str(data), data = media)
+            context.job_queue.run_repeating(send_tweets, interval=14400, first=1, chat_id=chat_id, name=str(data), data = media)
 
         await update.message.reply_text(
             "processing ...",
