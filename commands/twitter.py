@@ -210,7 +210,12 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
     job = context.job
 
     cursor = sqlite_conn.cursor()
-    cursor.execute("SELECT * FROM tweets")
+    cursor.execute(
+        """
+        SELECT * FROM `tweets` WHERE sent = ?
+        """,
+        (True,),
+    )
     results = cursor.fetchall()
 
     cursor.execute("SELECT * FROM point_system")
@@ -230,13 +235,12 @@ async def leaderboard(context: ContextTypes.DEFAULT_TYPE) -> None:
         previous_day = current_time - timedelta(days=1)
         for result in results:
             sent_time = result['sent_at']
-            sent = result['sent']
 
             sent_time = datetime.strptime(sent_time, '%Y-%m-%d %H:%M:%S.%f')
             print(sent_time)
             print(previous_day)
 
-            if sent_time >= previous_day and sent == 1:
+            if sent_time >= previous_day:
                 tweet_id = result['tw_id']
                 headers = {'authorization': f'Bearer {bearer_token}'}
 
@@ -421,7 +425,7 @@ async def send_tweets(context: ContextTypes.DEFAULT_TYPE) -> None:
     if result:
         cursor.execute(
             """
-            SELECT * FROM `tweets` WHERE sent = ? ORDER BY id DESC LIMIT 5
+            SELECT * FROM `tweets` WHERE sent = ? ORDER BY id DESC LIMIT 8
             """,
             (False,),
         )

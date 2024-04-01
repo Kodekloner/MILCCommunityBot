@@ -186,18 +186,18 @@ async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 if int(row['userid']) == int(member.id):
                     cursor.execute("UPDATE user_wallet_twitter SET chat_id = ?, telegram_group = ? WHERE userid = ?", (chat.id, chat.title, member.id))
                     sqlite_conn.commit()
-        await update.effective_chat.send_message(
-            f"{member_name} has joined us! Welcome my fren.",
-            parse_mode=ParseMode.HTML,
-        )
+        # await update.effective_chat.send_message(
+        #     f"{member_name} has joined us! Welcome my fren.",
+        #     parse_mode=ParseMode.HTML,
+        # )
 
     elif was_member and not is_member:
         cursor.execute("DELETE FROM user_wallet_twitter WHERE userid = ?;", (member.id,),)
         sqlite_conn.commit()
-        await update.effective_chat.send_message(
-            f"{member_name} is no longer with us! See you Soon!",
-            parse_mode=ParseMode.HTML,
-        )
+        # await update.effective_chat.send_message(
+        #     f"{member_name} is no longer with us! See you Soon!",
+        #     parse_mode=ParseMode.HTML,
+        # )
 
 
 def main():
